@@ -4,6 +4,10 @@
   "description": "A large, dependency-free statistics & modeling library for JavaScript/TypeScript.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mpdecker/statlab.git"
+  },
   "author": "Matthieu Decker <decker.matthieu@gmail.com>",
   "keywords": [
     "statistics",
@@ -497,13 +501,18 @@
     "globals": "^16.0.0"
   },
   "scripts": {
-    "prebuild": "node ../../scripts/gen-barrel.mjs",
+    "prebuild": "node scripts/gen-barrel.mjs",
     "build": "tsup && pnpm run build:types",
     "build:types": "tsc -p tsconfig.json",
-    "barrel": "node ../../scripts/gen-barrel.mjs",
+    "barrel": "node scripts/gen-barrel.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src/",
-    "typecheck": "tsc -p tsconfig.ci.json"
+    "typecheck": "tsc -p tsconfig.ci.json",
+    "docs": "node scripts/statlab.mjs",
+    "docs:list": "node scripts/statlab.mjs list",
+    "docs:search": "node scripts/statlab.mjs search",
+    "docs:generate": "node scripts/document.mjs",
+    "reference:generate": "node scripts/dump-fixtures.mjs && python scripts/gen-reference.py"
   }
 }
