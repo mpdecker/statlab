@@ -108,7 +108,7 @@ export function irtRasch1PL(matrix) {
         num += Y[i][j] - p;
         den += p * (1 - p);
       }
-      b[j] += (den > 1e-8 ? num / den : 0) * 0.5;
+      b[j] -= (den > 1e-8 ? num / den : 0) * 0.5;
     }
     const m = avg(b);
     b = b.map(x => x - m);
@@ -172,7 +172,7 @@ export function irt2PL(matrix, itemNames) {
         updA += (theta[i] - b[j]) * err;
         wA += (theta[i] - b[j]) ** 2 * p * (1 - p);
       }
-      b[j] += (wB > 1e-8 ? updB / wB : 0) * 0.4;
+      b[j] -= (wB > 1e-8 ? updB / wB : 0) * 0.4;
       a[j] = Math.max(0.2, a[j] + (wA > 1e-8 ? updA / wA : 0) * 0.2);
     }
   }
