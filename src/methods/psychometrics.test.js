@@ -3,6 +3,22 @@ import { omegaMcDonald, parallelAnalysis, irtRasch1PL, irt2PL, scaleScore, irt3P
 import ref from './__fixtures__/reference.json' with { type: 'json' };
 import { itemMatrix, itemRows, binaryMatrix } from './fixtures/phase3.js';
 import { expectKeys } from './__fixtures__/helpers.js';
+import { mulberry32, boxMullerN } from '../math/rng.js';
+
+/** Simulates a Rasch-conforming binary item-response matrix from real logistic
+ * item-response-theory generation (person ability θ ~ N(0,1), item difficulty
+ * spread linearly across a realistic range), for regression tests that need
+ * genuinely recoverable structure rather than the fixture-standard `binaryMatrix`
+ * (which thresholds a linear index pattern, not a real IRT model). */
+function simulateRaschMatrix(nPersons, nItems, seed) {
+  const rnd = mulberry32(seed);
+  const trueB = Array.from({ length: nItems }, (_, j) => -2 + (4 * j) / (nItems - 1));
+  const matrix = Array.from({ length: nPersons }, () => {
+    const theta = boxMullerN(rnd);
+    return trueB.map(b => (rnd() < 1 / (1 + Math.exp(-(theta - b))) ? 1 : 0));
+  });
+  return { matrix, trueB };
+}
 
 const mkMatrix = (n = 40, k = 4) => itemMatrix(n, k, 42);
 const mkRows = (n = 40) => itemRows(n, ['x1', 'x2', 'x3', 'x4'], 42);
@@ -150,6 +166,17 @@ describe('irtRasch1PL', () => {
     const zeros = Array.from({ length: 25 }, () => Array(4).fill(0));
     expect(irtRasch1PL(zeros)).not.toBeNull();
   });
+
+  it('recovers bounded, plausible difficulties on realistic simulated Rasch data', () => {
+    const { matrix } = simulateRaschMatrix(300, 15, 2024);
+    const r = irtRasch1PL(matrix);
+    r.difficulties.forEach(d => {
+      expect(Number.isFinite(d.b)).toBe(true);
+      expect(Math.abs(d.b)).toBeLessThan(10);
+    });
+    expect(Number.isFinite(r.thetaSD)).toBe(true);
+    expect(r.thetaSD).toBeLessThan(10);
+  });
 });
 
 describe('irt2PL', () => {
@@ -168,6 +195,17 @@ describe('irt2PL', () => {
     const r = irt2PL(bin);
     expectKeys(r, ['test', 'items', 'n', 'k', 'icc', 'apa']);
     expect(r.test).toBe('IRT 2PL');
+  });
+
+  it('recovers bounded, plausible difficulties on realistic simulated 2PL data', () => {
+    const { matrix } = simulateRaschMatrix(300, 15, 2024);
+    const r = irt2PL(matrix);
+    r.items.forEach(it => {
+      expect(Number.isFinite(it.b)).toBe(true);
+      expect(Math.abs(it.b)).toBeLessThan(10);
+      expect(Number.isFinite(it.a)).toBe(true);
+      expect(it.a).toBeLessThan(10);
+    });
   });
 });
 
