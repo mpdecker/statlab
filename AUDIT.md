@@ -911,6 +911,19 @@ These no longer apply — see the status update for what each was replaced with.
 
 ## Remaining recommended next steps
 
-1. Merge CI onto `main` (workflow currently only exists on a feature branch).
-2. Keep the "deliberately simplified, not fabricated" modules (`fda.js`, `pgm.js`, `causalDiscovery.js`, contested conventions like `segregationIndex`) documented as scoped/simplified in their own module comments so a downstream user isn't surprised.
-3. Version and `npm publish -w statlab` when ready — packaging is in place; nothing structural is blocking it.
+> **STATUS UPDATE (2026-07-13).** Since the note above: the repo was extracted out of the
+> `statlab-app` monorepo into its own standalone, flat-layout package repo
+> (`chore: adapt package for standalone repo`), CI is now a five-job pipeline on `main`
+> (test/build × Node 22/24, lint, typecheck, coverage ≥90% lines, `npm pack` verify — all green),
+> and `statlab@0.1.0` **is published on the npm registry** (2026-07-10). A real correctness bug
+> was found and fixed after that publish — `fix: correct item-difficulty update sign in IRT
+> 1PL/2PL joint-MLE estimation` (2026-07-12) — along with a large JSDoc/typecheck cleanup pass
+> (0 `tsc` errors) and a dependency-vulnerability sweep (`pnpm audit`: 17 → 0, dev-toolchain only,
+> nothing shipped). **None of this is in the published 0.1.0** — the live package still has the
+> IRT sign bug.
+
+1. ~~Merge CI onto `main`~~ — done; five-job pipeline, all green.
+2. **Publish a `0.1.1` patch release.** The IRT joint-MLE fix is a real correctness bug in code
+   already on npm; nothing else since 0.1.0 changes public behavior, so this is a straightforward
+   patch bump (`npm version patch && npm publish`) once you're ready to cut a release.
+3. Keep the "deliberately simplified, not fabricated" modules (`fda.js`, `pgm.js`, `causalDiscovery.js`, contested conventions like `segregationIndex`) documented as scoped/simplified in their own module comments so a downstream user isn't surprised.
