@@ -58,8 +58,9 @@ see the repository's `BASELINE.md` for the per-method rigor classification.
 
 ## Types
 
-v0.x ships auto-generated `.d.ts` declarations; parameter types are currently
-loose (`any`). Precise JSDoc-derived types are being added module-by-module.
+Ships `.d.ts` declarations generated from precise JSDoc annotations across
+every module (parameter and return-shape types, not `any`) — `tsc` passes
+with zero errors against the full public surface.
 
 ## License
 
