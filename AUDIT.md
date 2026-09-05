@@ -911,19 +911,20 @@ These no longer apply — see the status update for what each was replaced with.
 
 ## Remaining recommended next steps
 
-> **STATUS UPDATE (2026-07-13).** Since the note above: the repo was extracted out of the
-> `statlab-app` monorepo into its own standalone, flat-layout package repo
-> (`chore: adapt package for standalone repo`), CI is now a five-job pipeline on `main`
-> (test/build × Node 22/24, lint, typecheck, coverage ≥90% lines, `npm pack` verify — all green),
-> and `statlab@0.1.0` **is published on the npm registry** (2026-07-10). A real correctness bug
-> was found and fixed after that publish — `fix: correct item-difficulty update sign in IRT
-> 1PL/2PL joint-MLE estimation` (2026-07-12) — along with a large JSDoc/typecheck cleanup pass
-> (0 `tsc` errors) and a dependency-vulnerability sweep (`pnpm audit`: 17 → 0, dev-toolchain only,
-> nothing shipped). **None of this is in the published 0.1.0** — the live package still has the
-> IRT sign bug.
+> **STATUS UPDATE (2026-09-05).** `statlab@0.1.1` is cut on this branch (`package.json` bumped,
+> pending `npm publish`) and includes everything below. Since the 0.1.0 publish (2026-07-10): the
+> repo was extracted out of the `statlab-app` monorepo into its own standalone, flat-layout package
+> repo; CI is a five-job pipeline on `main` (test/build × Node 22/24, lint, typecheck, coverage
+> ≥90% lines, `npm pack` verify — all green); a real correctness bug was found and fixed —
+> `fix: correct item-difficulty update sign in IRT 1PL/2PL joint-MLE estimation` (2026-07-12) —
+> along with a large JSDoc/typecheck cleanup pass (0 `tsc` errors); and a dependency-vulnerability
+> sweep (`pnpm audit`: 17 → 0, dev-toolchain only, nothing shipped). Pre-publish verification for
+> 0.1.1 (clean worktree, `pnpm install --frozen-lockfile`): typecheck clean, lint 0 errors (367
+> pre-existing warnings only), 6025/6025 tests passing at 97.67% line coverage, build and
+> `npm pack --dry-run` both clean.
 
 1. ~~Merge CI onto `main`~~ — done; five-job pipeline, all green.
-2. **Publish a `0.1.1` patch release.** The IRT joint-MLE fix is a real correctness bug in code
-   already on npm; nothing else since 0.1.0 changes public behavior, so this is a straightforward
-   patch bump (`npm version patch && npm publish`) once you're ready to cut a release.
+2. ~~Publish a `0.1.1` patch release.~~ Version bumped and verified on `release/0.1.1`; the actual
+   `npm publish` is left for whoever holds npm publish credentials for this package, since the
+   local machine cutting this release isn't authenticated to the registry.
 3. Keep the "deliberately simplified, not fabricated" modules (`fda.js`, `pgm.js`, `causalDiscovery.js`, contested conventions like `segregationIndex`) documented as scoped/simplified in their own module comments so a downstream user isn't surprised.
