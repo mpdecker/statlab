@@ -1,6 +1,6 @@
 {
   "name": "statlab",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A large, dependency-free statistics & modeling library for JavaScript/TypeScript.",
   "type": "module",
   "license": "MIT",
