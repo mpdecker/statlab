@@ -1,5 +1,5 @@
 {
-  "name": "statlab",
+  "name": "@statlab/core",
   "version": "0.1.1",
   "description": "A large, dependency-free statistics & modeling library for JavaScript/TypeScript.",
   "type": "module",
@@ -515,5 +515,8 @@
     "docs:search": "node scripts/statlab.mjs search",
     "docs:generate": "node scripts/document.mjs",
     "reference:generate": "node scripts/dump-fixtures.mjs && python scripts/gen-reference.py"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

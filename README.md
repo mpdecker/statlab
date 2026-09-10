@@ -1,4 +1,4 @@
-# statlab
+# @statlab/core
 
 A large, **dependency-free** statistics & modeling library for JavaScript/TypeScript.
 84 method modules + 6 numerical primitives — regression, ANOVA, survival,
@@ -8,7 +8,7 @@ Pure ESM, runtime-agnostic (runs unchanged in Node and the browser), ships ESM +
 ## Install
 
 ```sh
-npm install statlab
+npm install @statlab/core
 ```
 
 Zero runtime dependencies.
@@ -21,33 +21,33 @@ appear in more than one module).
 
 ```js
 // Namespaced barrel
-import { survival, anova, core } from 'statlab';
+import { survival, anova, core } from '@statlab/core';
 
 survival.coxPH(/* … */);
 anova.oneWayANOVA(/* … */);
 core.avg([1, 2, 3]);
 
 // Or import a single module directly (tree-shakeable subpath)
-import { coxPH } from 'statlab/methods/survival';
-import { avg } from 'statlab/math/core';
+import { coxPH } from '@statlab/core/methods/survival';
+import { avg } from '@statlab/core/math/core';
 ```
 
 CommonJS works too:
 
 ```js
-const { survival } = require('statlab');
+const { survival } = require('@statlab/core');
 ```
 
 ### Module layout
 
-- `statlab/math/*` — numerical primitives: `core`, `distributions`, `inference`,
+- `@statlab/core/math/*` — numerical primitives: `core`, `distributions`, `inference`,
   `matrix`, `power`, `rng`.
-- `statlab/methods/*` — the 84 statistical method modules (`anova`, `regression`,
+- `@statlab/core/methods/*` — the 84 statistical method modules (`anova`, `regression`,
   `survival`, `ecology`, `econometric`, `sem`, `bayesian`, …).
 
 > Note: two modules share the basename `power`. In the barrel, the low-level
-> primitives are `power` (`statlab/math/power`) and the power-analysis methods are
-> `powerAnalysis` (`statlab/methods/power`).
+> primitives are `power` (`@statlab/core/math/power`) and the power-analysis methods are
+> `powerAnalysis` (`@statlab/core/methods/power`).
 
 ## Accuracy & rigor
 
