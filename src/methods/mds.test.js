@@ -114,6 +114,52 @@ describe('hardening — invalid inputs', () => {
   });
 });
 
+describe('sammonMapping numerical stability on real-world-shaped data', () => {
+  it('stays finite on a large dataset with many near-duplicate rows (regression: used to diverge to all-NaN)', () => {
+    // Mirrors the shape that broke this in production: n in the hundreds, and
+    // several variables with low cardinality (e.g. "years since X") so many
+    // rows share identical or near-identical values — some pairwise distances
+    // land essentially at zero while others are much larger.
+    const nTemplates = 40, perTemplate = 10;
+    const bigData = [];
+    for (let t = 0; t < nTemplates; t++) {
+      const yrsPhd = t % 20;
+      const yrsService = Math.floor(t / 2);
+      for (let k = 0; k < perTemplate; k++) {
+        const salary = 50000 + t * 1500 + (k % 3 === 0 ? 0 : k * 7); // exact duplicates when k % 3 === 0
+        bigData.push({ yrsPhd, yrsService, salary });
+      }
+    }
+    const r = sammonMapping(bigData, ['yrsPhd', 'yrsService', 'salary'], { nDimensions: 2 });
+    expect(r).not.toBeNull();
+    expect(r.points).toHaveLength(bigData.length);
+    for (const p of r.points) for (const v of p) expect(Number.isFinite(v)).toBe(true);
+  });
+
+  it('reduces Sammon stress rather than increasing it (regression: gradient direction was inverted)', () => {
+    const stress = (points, D, n, nDimensions) => {
+      let num = 0, c = 0;
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+        let dh = 0; for (let d = 0; d < nDimensions; d++) dh += (points[i][d] - points[j][d]) ** 2;
+        dh = Math.sqrt(dh);
+        num += (D[i][j] - dh) ** 2 / D[i][j]; c += D[i][j];
+      }
+      return num / c;
+    };
+    const vars = ['x1', 'x2', 'x3', 'x4'];
+    const n = data.length, m = vars.length;
+    const X = data.map(r => vars.map(v => +r[v]));
+    const D = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => {
+      if (i === j) return 0;
+      let s = 0; for (let k = 0; k < m; k++) s += (X[i][k] - X[j][k]) ** 2;
+      return Math.sqrt(Math.max(s, 1e-10));
+    }));
+    const before = stress(classicalMDS(data, vars, { nDimensions: 2 }).points, D, n, 2);
+    const after = stress(sammonMapping(data, vars, { nDimensions: 2, maxIter: 50 }).points, D, n, 2);
+    expect(after).toBeLessThan(before);
+  });
+});
+
 describe('hardening — reproducibility', () => {
   it('sammonMapping reproducible with seed', () => {
     const r1 = sammonMapping(data, ['x1', 'x2'], { seed: 42, maxIter: 10 });

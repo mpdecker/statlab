@@ -99,27 +99,45 @@ export function sammonMapping(data, vars, { seed = 42, nDimensions = 2, maxIter 
   const init = classicalMDS(data, vars, { nDimensions });
   let points = init ? init.points : Array.from({ length: n }, () => Array(nDimensions).fill(0).map(() => (__rng() - 0.5)));
 
+  // Sammon's (1969) update: a steepest-descent step normalized by the diagonal
+  // Hessian term, not a flat learning rate on the raw gradient. A flat rate has
+  // no way to detect that a near-duplicate row pair (D[i][j] ~ 0, common in
+  // real-world data with repeated/near-repeated values) creates enormous local
+  // curvature; it overshoots that pair by orders of magnitude on the very first
+  // step, and the fixed decaying rate below (which used to divide the raw
+  // gradient directly) compounded that overshoot exponentially every iteration
+  // until it overflowed to Infinity/NaN. Dividing by the curvature (g2) instead
+  // keeps the step proportional to how well-determined the direction actually
+  // is, which is what makes the classic "magic factor" MF ≈ 0.3 stable at all.
+  const MF = 0.3;
   for (let iter = 0; iter < maxIter; iter++) {
-    const grad = points.map(() => Array(nDimensions).fill(0));
+    const g1 = points.map(() => Array(nDimensions).fill(0));
+    const g2 = points.map(() => Array(nDimensions).fill(0));
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
-        let dHat = 0;
-        for (let d = 0; d < nDimensions; d++) dHat += (points[i][d] - points[j][d]) ** 2;
-        dHat = Math.sqrt(Math.max(dHat, 1e-10));
-        const term = (D[i][j] - dHat) / (D[i][j] * dHat + 1e-10);
+        let dHatSq = 0;
+        for (let d = 0; d < nDimensions; d++) dHatSq += (points[i][d] - points[j][d]) ** 2;
+        const dHat = Math.sqrt(Math.max(dHatSq, 1e-10));
+        const Dij = D[i][j];
+        const inv = 1 / (Dij * dHat + 1e-10);
+        const diffD = Dij - dHat;
+        const term = diffD * inv;
         for (let d = 0; d < nDimensions; d++) {
-          const gd = term * (points[i][d] - points[j][d]);
-          grad[i][d] += gd;
-          grad[j][d] -= gd;
+          const diff = points[i][d] - points[j][d];
+          const gd = term * diff;
+          g1[i][d] += gd;
+          g1[j][d] -= gd;
+          const g2d = inv * (diffD - (diff * diff / dHat) * (1 + diffD / dHat));
+          g2[i][d] += g2d;
+          g2[j][d] += g2d;
         }
       }
     }
-    const lr = 0.3 / (1 + 0.01 * iter);
     let maxDelta = 0;
     for (let i = 0; i < n; i++) {
       for (let d = 0; d < nDimensions; d++) {
-        const delta = lr * grad[i][d];
-        points[i][d] -= delta;
+        const delta = MF * g1[i][d] / (Math.abs(g2[i][d]) + 1e-10);
+        points[i][d] += delta;
         maxDelta = Math.max(maxDelta, Math.abs(delta));
       }
     }
