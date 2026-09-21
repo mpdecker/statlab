@@ -83,6 +83,40 @@ describe('sem', () => {
   });
 });
 
+describe('sem recovers true factor loadings with plausible SEs (regression test for the Newton step freezing at the loading parameters\' initial guess of 0.3 whenever the Hessian isn\'t positive-definite there)', () => {
+  it('recovers loadings close to ground truth, with finite non-zero SEs, on a well-identified synthetic single-factor model', () => {
+    let s = 42; const z = () => { let u = 0; for (let k = 0; k < 12; k++) { s = (Math.imul(1664525, s) + 1013904223) >>> 0; u += s / 2 ** 32; } return u - 6; };
+    const trueLoadings = [1, 0.85, 0.75, 0.7]; // first indicator is the fixed marker
+    const data = [];
+    for (let i = 0; i < 300; i++) {
+      const f = z();
+      const row = {};
+      trueLoadings.forEach((l, idx) => { row[`i${idx + 1}`] = l * f + z() * 0.5; });
+      data.push(row);
+    }
+
+    const r = sem({ equations: ['f1 =~ i1 + i2 + i3 + i4'], data });
+    expect(r).not.toBeNull();
+    expect(r.loadings.length).toBe(3);
+
+    // None of the non-marker loadings may still be sitting at the Newton-Raphson
+    // initial guess (0.3) or have a degenerate SE — both are the direct symptom
+    // of the step never moving away from its starting point.
+    r.loadings.forEach((l, idx) => {
+      const truth = trueLoadings[idx + 1];
+      expect(Math.abs(l.estimate - truth)).toBeLessThan(0.25);
+      expect(l.se).toBeGreaterThan(0.01);
+      expect(l.se).toBeLessThan(5);
+      expect(Number.isFinite(l.se)).toBe(true);
+    });
+
+    // A chi2 this small relative to df must yield internally-consistent fit
+    // indices (the old bug produced CFI=1/RMSEA=0 alongside a huge chi2).
+    expect(r.fit.rmsea).toBeLessThan(0.15);
+    expect(r.fit.cfi).toBeGreaterThan(0.9);
+  });
+});
+
 describe('semMultiGroup', () => {
   const mgData = [];
   for (let g = 0; g < 2; g++) {
@@ -372,6 +406,30 @@ describe('ordinalSEM recovers real polychoric correlations and a real factor fit
     const r = ordinalSEM(data, ['v1', 'v2', 'v3'], 'F =~ v1 + v2 + v3', { nThresh: 4 });
     expect(r.loadings.length).toBe(2);
     r.loadings.forEach(l => expect(l.estimate).toBeGreaterThan(0));
+  });
+
+  it('does not freeze loadings at the shared _fitRAMByML Newton-Raphson initial guess of 0.3, with plausible SEs', () => {
+    let s = 7; const z = () => { let u = 0; for (let k = 0; k < 12; k++) { s = (Math.imul(1664525, s) + 1013904223) >>> 0; u += s / 2 ** 32; } return u - 6; };
+    const lambda = [1, 0.85, 0.6];
+    const cutpoints = [-1, -0.3, 0.3, 1];
+    const data = [];
+    for (let i = 0; i < 300; i++) {
+      const f = z();
+      const row = {};
+      lambda.forEach((l, idx) => {
+        const raw = l * f + z() * 0.4;
+        row[`v${idx + 1}`] = cutpoints.filter(c => raw > c).length;
+      });
+      data.push(row);
+    }
+    const r = ordinalSEM(data, ['v1', 'v2', 'v3'], 'F =~ v1 + v2 + v3', { nThresh: 4 });
+    expect(r.loadings.length).toBe(2);
+    r.loadings.forEach(l => {
+      expect(l.estimate).not.toBeCloseTo(0.3, 2);
+      expect(Number.isFinite(l.se)).toBe(true);
+      expect(l.se).toBeGreaterThan(0.001);
+      expect(l.se).toBeLessThan(5);
+    });
   });
 });
 
