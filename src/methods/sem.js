@@ -171,7 +171,11 @@ function mlDiscrepancy(S, modelCovMat) {
   const minv = matInv(modelCovMat);
   if (!minv) return 1e10;
   for (let i = 0; i < p; i++) for (let j = 0; j < p; j++) tr += S[i][j] * minv[i][j];
-  return Math.log(detM) + tr - Math.log(detS || 1e-10) - p;
+  // `detS || 1e-10` only substitutes when detS is exactly 0 — a small NEGATIVE
+  // detS from cofactor-expansion floating-point error (near-singular S) slips
+  // through untouched and sends Math.log() to NaN, poisoning every downstream
+  // fit statistic. Guard the sign explicitly, matching the detM <= 0 guard above.
+  return Math.log(detM) + tr - Math.log(detS > 0 ? detS : 1e-10) - p;
 }
 
 // ── Shared RAM-ML fitting (used by sem() and ordinalSEM()) ─────────────────
@@ -207,6 +211,9 @@ function _fitRAMByML(S, ram, parsed, { maxIter = 200, tolerance = 1e-6 } = {}) {
       const up = [...theta]; up[j] += eps;
       grad[j] = (discrepancy(up) - f0) / eps;
     }
+    const gradNormSq = grad.reduce((s, g) => s + g * g, 0);
+    if (gradNormSq < tolerance) break;
+
     const hess = Array.from({ length: k }, (_, i) =>
       Array.from({ length: k }, (_, j) => {
         const up1 = [...theta]; up1[i] += eps; up1[j] += eps;
@@ -214,15 +221,26 @@ function _fitRAMByML(S, ram, parsed, { maxIter = 200, tolerance = 1e-6 } = {}) {
       })
     );
     const hInv = matInv(hess);
-    if (!hInv) break;
-    const step = hInv.map(r => r.reduce((s, v, i) => s - v * grad[i], 0));
-    let lambda = 1;
-    for (let halve = 0; halve <= 10; halve++) {
+    let step = hInv ? hInv.map(r => r.reduce((s, v, i) => s - v * grad[i], 0)) : null;
+    // -H^-1*grad is only a descent direction when H is positive-definite,
+    // which routinely fails far from the optimum — e.g. at the loading
+    // parameters' initial guess of 0.3, the Newton step pointed uphill,
+    // the line search below exhausted every halving without ever finding
+    // improvement, and theta silently never moved for the rest of the run.
+    // Fall back to steepest descent — guaranteed to be a descent direction
+    // for a differentiable function — whenever Newton's step points uphill
+    // or H is singular.
+    if (!step || step.reduce((s, v, i) => s + v * grad[i], 0) >= 0) {
+      const gradNorm = Math.sqrt(gradNormSq);
+      step = grad.map(g => -g / gradNorm);
+    }
+    let lambda = 1, moved = false;
+    for (let halve = 0; halve <= 20; halve++) {
       const cand = theta.map((v, j) => v + lambda * step[j]);
-      if (discrepancy(cand) < f0 - 1e-10) { theta = cand; break; }
+      if (discrepancy(cand) < f0 - 1e-10) { theta = cand; moved = true; break; }
       lambda /= 2;
     }
-    if (grad.reduce((s, g) => s + g * g, 0) < tolerance) break;
+    if (!moved) break;
   }
 
   const mc = modelCov(theta, ram, parsed);
