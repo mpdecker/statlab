@@ -928,3 +928,32 @@ These no longer apply — see the status update for what each was replaced with.
    `npm publish` is left for whoever holds npm publish credentials for this package, since the
    local machine cutting this release isn't authenticated to the registry.
 3. Keep the "deliberately simplified, not fabricated" modules (`fda.js`, `pgm.js`, `causalDiscovery.js`, contested conventions like `segregationIndex`) documented as scoped/simplified in their own module comments so a downstream user isn't surprised.
+
+> **STATUS UPDATE (2026-09-21).** `statlab@0.1.2` is cut on `fix/sem-loading-optimization`
+> (`package.json` bumped, pending `npm publish`) and bundles three sem.js/multivariate-adjacent
+> correctness fixes found against the real `carData::Salaries` dataset since 0.1.1, all with
+> regression tests:
+> - `fix: correct sammonMapping's gradient descent to prevent NaN divergence` (#5, merged) —
+>   gradient-ascent sign error plus an unnormalized step size diverged to `NaN`/`Infinity` on
+>   near-duplicate rows (5 exact triples + 85 partial-duplicate groups in `Salaries.csv`).
+> - `fix: sem()/ordinalSEM() Newton-Raphson stuck at initial loading guess` (merged) — an
+>   indefinite-Hessian Newton step with no descent-direction check froze `theta` at its 0.3 initial
+>   guess whenever the step pointed uphill, silently reporting the initial guess as the fitted
+>   loadings.
+> - `fix: bifactorModel communality/omegaTotal exceeding 1` ([PR #7](https://github.com/mpdecker/statlab/pull/7), open) — `bifactorModel` extracted
+>   factors from a raw covariance matrix instead of a correlation matrix (unlike `pca()`/`efa()` in
+>   `multivariate.js`); on items not already near unit variance this made communality/omegaTotal
+>   blow past 1 (up to ~35 on a synthetic years-like-scale case), independent of the existing
+>   per-loading cap on `general`. Fixed at the source (standardize before extraction) plus a joint
+>   `general`+`group` cap as a defensive backstop, and corrected `omegaHierarchical`/`omegaTotal` to
+>   the Rodriguez, Reise & Haviland (2016) formulas (previous `omegaTotal` was mean per-item
+>   communality, not omega-total; previous `omegaHierarchical` used an unrelated denominator that
+>   happened to land in `[0,1)` by algebraic construction rather than computing the real
+>   model-implied composite variance).
+>
+> Pre-publish verification for 0.1.2 (same worktree the fixes were made in): typecheck clean, lint
+> 0 errors (367 pre-existing warnings only, same count as 0.1.1), 6031/6031 tests passing, build
+> and `npm pack --dry-run` both clean (`statlab-core-0.1.2.tgz`, 1.8 MB packed / 8.2 MB unpacked,
+> 367 files). `npm publish` still left for whoever holds registry credentials — this machine isn't
+> authenticated (`npm whoami` fails; the only registry token in the global `.npmrc` is scoped to
+> GitHub Packages for an unrelated package, not the public npm registry).

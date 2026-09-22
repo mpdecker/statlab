@@ -758,9 +758,21 @@ export function bifactorModel(data, generalFactor, groupFactors, { maxIter = 50 
   if (!data || data.length < 20 || !groupFactors || !groupFactors.length) return null;
   const allItems = groupFactors.flatMap(g => g.items);
   const n = data.length;
-  const S = covMatrix(data, allItems);
+  // Factor extraction requires a CORRELATION matrix (unit diagonal), matching
+  // pca()/efa() in multivariate.js — communalities are only meaningful as
+  // proportions-of-variance-explained when items are on the same unit-variance
+  // scale as the off-diagonal correlations. Feeding covMatrix's raw covariances
+  // straight in (as this used to) put arbitrary-scale numbers off-diagonal
+  // against a [0.01,0.99] communality diagonal; on any item not already close
+  // to unit variance (e.g. dollars, years) that mismatch alone sent the
+  // extracted eigenvalues — and every loading/communality/omega derived from
+  // them — to whatever multiple of the item's real variance happened to fall
+  // out, independent of the per-loading cap below.
+  const rawS = covMatrix(data, allItems);
   const m = allItems.length;
   if (!m) return null;
+  const sds = Array.from({ length: m }, (_, i) => Math.sqrt(Math.max(rawS[i][i], 1e-12)));
+  const S = rawS.map((row, i) => row.map((v, j) => v / (sds[i] * sds[j])));
 
   const communalities = Array(m).fill(0.5);
   let loadings;
@@ -782,8 +794,23 @@ export function bifactorModel(data, generalFactor, groupFactors, { maxIter = 50 
 
     loadings = allItems.map((item, i) => {
       const gIdx = itemGroupIdx[i];
-      const gf = +Math.min(Math.abs(A[i][0] || 0), 0.99).toFixed(4);
-      const gr = +(A[i][gIdx] ? Math.abs(A[i][gIdx]) : 0).toFixed(4);
+      let gf = Math.abs(A[i][0] || 0);
+      let gr = Math.abs(A[i][gIdx] ? A[i][gIdx] : 0);
+      // communality = gf^2 + gr^2 must itself be a bounded proportion of
+      // variance (<=1 by definition). Capping gf and gr independently doesn't
+      // guarantee that — e.g. two components independently clamped to 0.99
+      // still sum to ~1.96 — so cap the PAIR jointly, rescaling both loadings
+      // by the same factor to preserve their relative split between general
+      // and group signal. This is also the correct place to enforce it: an
+      // orthogonal Procrustes rotation preserves each item's row norm, so
+      // capping before vs. after rotation doesn't change the bound.
+      const rawComm = gf * gf + gr * gr;
+      const cap = 0.99;
+      if (rawComm > cap) {
+        const scale = Math.sqrt(cap / rawComm);
+        gf *= scale; gr *= scale;
+      }
+      gf = +gf.toFixed(4); gr = +gr.toFixed(4);
       return { item, general: gf, group: gr, communality: +(gf * gf + gr * gr).toFixed(4) };
     });
 
@@ -796,9 +823,32 @@ export function bifactorModel(data, generalFactor, groupFactors, { maxIter = 50 
     if (maxDelta < 1e-5) break;
   }
 
+  // omegaHierarchical/omegaTotal per Rodriguez, Reise & Haviland (2016),
+  // "Evaluating bifactor models: Calculating and interpreting statistical
+  // indices" (building on Reise, 2012) — verified against the reference
+  // BifactorIndicesCalculator R package's Omega_H/Omega_S implementation.
+  // Var(X) is the model-implied variance of the summed composite score under
+  // the bifactor structure (orthogonal general + group factors, unit item
+  // variance): the general factor's contribution (sum of its loadings,
+  // squared) plus each group factor's contribution (sum of that group's
+  // loadings, squared, summed across groups) plus total uniqueness.
+  // omegaHierarchical is the share of that variance from the general factor
+  // alone; omegaTotal is the share from general + all group factors combined.
+  // (The previous omegaTotal — mean per-item communality — wasn't this
+  // statistic at all, and previous omegaHierarchical used an unrelated
+  // approximate denominator (genSum^2 + m) that happened to always land in
+  // [0,1) by algebraic construction rather than by computing Var(X); with
+  // that mismatch, a properly-bounded omegaTotal could end up smaller than
+  // omegaHierarchical, which is meaningless since total reliability can never
+  // be less than the general factor's reliability alone.)
   const genSum = loadings.reduce((s, l) => s + l.general, 0);
-  const omegaH = genSum * genSum / (genSum * genSum + m);
-  const omegaTotal = loadings.reduce((s, l) => s + l.general * l.general + l.group * l.group, 0) / m;
+  const groupSums = Array(groupFactors.length).fill(0);
+  loadings.forEach((l, i) => { groupSums[itemGroupIdx[i] - 1] += l.group; });
+  const sumSqGroups = groupSums.reduce((s, gs) => s + gs * gs, 0);
+  const sumTheta = loadings.reduce((s, l) => s + Math.max(0, 1 - l.communality), 0);
+  const varX = genSum * genSum + sumSqGroups + sumTheta;
+  const omegaH = varX > 1e-12 ? (genSum * genSum) / varX : 0;
+  const omegaTotal = varX > 1e-12 ? (genSum * genSum + sumSqGroups) / varX : 0;
 
   return {
     test: 'Bifactor Model',

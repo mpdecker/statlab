@@ -373,6 +373,62 @@ describe('bifactorModel', () => {
   it('omegaTotal between 0-1', () => { const r = bifactorModel(d, 'G', [{ name: 'F1', items: ['v1', 'v2', 'v3'] }, { name: 'F2', items: ['v4', 'v5', 'v6'] }]); if (r) { expect(r.omegaTotal).toBeGreaterThanOrEqual(0); expect(r.omegaTotal).toBeLessThanOrEqual(1); } });
 });
 
+describe('bifactorModel bounds communality/omegaTotal/omegaHierarchical in [0,1] (regression test for the uncapped-group-loading + raw-covariance bug)', () => {
+  it('stays bounded when items are measured on a large, non-unit-variance scale (well-determined: 6 items, 3 factors)', () => {
+    let s = 11; const rnd = () => { s = (Math.imul(1664525, s) + 1013904223) >>> 0; return s / 2 ** 32; };
+    function randn() { let u = 0; for (let i = 0; i < 12; i++) u += rnd(); return u - 6; }
+    const n = 800;
+    const data = [];
+    for (let i = 0; i < n; i++) {
+      const g = randn(), gA = randn(), gB = randn();
+      const row = {};
+      for (let j = 0; j < 6; j++) {
+        const groupLoad = j < 3 ? 0.6 * gA : 0.6 * gB;
+        const z = 0.5 * g + groupLoad + Math.sqrt(1 - 0.25 - 0.36) * randn();
+        row['item' + j] = 20 + z * 13; // years-like scale (mean 20, sd 13) — previously blew communality up to ~35
+      }
+      data.push(row);
+    }
+    const groupFactors = [
+      { name: 'A', items: ['item0', 'item1', 'item2'] },
+      { name: 'B', items: ['item3', 'item4', 'item5'] },
+    ];
+    const r = bifactorModel(data, 'g', groupFactors);
+    expect(r).toBeTruthy();
+    r.loadings.forEach(l => {
+      expect(l.communality).toBeGreaterThanOrEqual(0);
+      expect(l.communality).toBeLessThanOrEqual(1);
+    });
+    expect(r.omegaTotal).toBeGreaterThanOrEqual(0);
+    expect(r.omegaTotal).toBeLessThanOrEqual(1);
+    expect(r.omegaHierarchical).toBeGreaterThanOrEqual(0);
+    expect(r.omegaHierarchical).toBeLessThanOrEqual(1);
+    // omega total is the reliability of the whole (general + specific) composite,
+    // so it can never be smaller than omega hierarchical (general factor alone)
+    expect(r.omegaTotal).toBeGreaterThanOrEqual(r.omegaHierarchical - 1e-9);
+  });
+
+  it('stays bounded in a degenerate single-item-per-group case (more requested factors than items)', () => {
+    let s = 42; const rnd = () => { s = (Math.imul(1664525, s) + 1013904223) >>> 0; return s / 2 ** 32; };
+    function randn() { let u = 0; for (let i = 0; i < 12; i++) u += rnd(); return u - 6; }
+    const data = [];
+    for (let i = 0; i < 397; i++) {
+      data.push({
+        'yrs.since.phd': Math.max(1, Math.round(22 + randn() * 12.9)),
+        'yrs.service': Math.max(0, Math.round(17.6 + randn() * 13.0)),
+      });
+    }
+    const r = bifactorModel(data, 'G', [
+      { name: 'A', items: ['yrs.since.phd'] },
+      { name: 'B', items: ['yrs.service'] },
+    ]);
+    expect(r).toBeTruthy();
+    r.loadings.forEach(l => expect(l.communality).toBeLessThanOrEqual(1));
+    expect(r.omegaTotal).toBeLessThanOrEqual(1);
+    expect(r.omegaHierarchical).toBeLessThanOrEqual(1);
+  });
+});
+
 describe('ordinalSEM', () => {
   const d = []; for (let i = 0; i < 30; i++) d.push({ v1: i % 5, v2: (i + 1) % 5, v3: (i + 2) % 5 });
   it('contract keys', () => expectKeys(ordinalSEM(d, ['v1', 'v2', 'v3'], 'F =~ v1 + v2 + v3'), ['test', 'loadings', 'thresholds', 'fit', 'n', 'apa']));
