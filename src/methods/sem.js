@@ -466,6 +466,9 @@ function _fitMultiGroupCFA(groupStats, m, { shareLoadings, shareIntercepts, shar
     const f0 = discrepancy(theta);
     const grad = Array(k).fill(0);
     for (let j = 0; j < k; j++) { const up = [...theta]; up[j] += eps; grad[j] = (discrepancy(up) - f0) / eps; }
+    const gradNormSq = grad.reduce((s, g2) => s + g2 * g2, 0);
+    if (gradNormSq < tolerance) break;
+
     const hess = Array.from({ length: k }, () => Array(k).fill(0));
     for (let i = 0; i < k; i++) {
       for (let j = i; j < k; j++) {
@@ -475,15 +478,23 @@ function _fitMultiGroupCFA(groupStats, m, { shareLoadings, shareIntercepts, shar
       }
     }
     const hInv = matInv(hess);
-    if (!hInv) break;
-    const step = hInv.map(r => r.reduce((s, v, i) => s - v * grad[i], 0));
-    let lam = 1;
-    for (let halve = 0; halve <= 10; halve++) {
+    let step = hInv ? hInv.map(r => r.reduce((s, v, i) => s - v * grad[i], 0)) : null;
+    // -H^-1*grad is only a descent direction when H is positive-definite, which
+    // routinely fails far from the optimum — e.g. at the loading parameters'
+    // initial guess of 0.7 (see _fitRAMByML, which has the identical issue).
+    // Fall back to steepest descent — guaranteed to be a descent direction —
+    // whenever Newton's step points uphill or H is singular.
+    if (!step || step.reduce((s, v, i) => s + v * grad[i], 0) >= 0) {
+      const gradNorm = Math.sqrt(gradNormSq);
+      step = grad.map(g => -g / gradNorm);
+    }
+    let lam = 1, moved = false;
+    for (let halve = 0; halve <= 20; halve++) {
       const cand = theta.map((v, j) => v + lam * step[j]);
-      if (discrepancy(cand) < f0 - 1e-10) { theta = cand; break; }
+      if (discrepancy(cand) < f0 - 1e-10) { theta = cand; moved = true; break; }
       lam /= 2;
     }
-    if (grad.reduce((s, g2) => s + g2 * g2, 0) < tolerance) break;
+    if (!moved) break;
   }
 
   const chi2 = discrepancy(theta);
