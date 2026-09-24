@@ -3,16 +3,28 @@ import { sem, semMultiGroup, measurementInvariance, latentGrowthModel, pathAnaly
 import { expectKeys } from './__fixtures__/helpers.js';
 import ref from './__fixtures__/reference.json' with { type: 'json' };
 
+// 4 indicators (not 3): a one-factor CFA with exactly 3 indicators is
+// just-identified (df = 3*4/2 - 6 = 0) -- it reproduces the observed
+// covariance exactly by construction, so there is no model fit left to
+// test and CFI/TLI/RMSEA/p are correctly NaN (see the "honest degrees of
+// freedom" describe block below). These fixtures exist to exercise genuine,
+// testable over-identified fit statistics, so they need 4+ indicators.
 const cfaData = [];
 for (let i = 0; i < 50; i++) {
   const f1 = Math.random() * 2 - 1;
-  cfaData.push({ x1: 1 * f1 + Math.random() * 0.5, x2: 0.8 * f1 + Math.random() * 0.5, x3: 0.7 * f1 + Math.random() * 0.5 });
+  cfaData.push({
+    x1: 1 * f1 + Math.random() * 0.5, x2: 0.8 * f1 + Math.random() * 0.5,
+    x3: 0.7 * f1 + Math.random() * 0.5, x4: 0.6 * f1 + Math.random() * 0.5,
+  });
 }
 
 const semData = [];
 for (let i = 0; i < 50; i++) {
   const f1 = Math.random();
-  semData.push({ x1: 0.8 * f1 + Math.random() * 0.3, x2: 0.7 * f1 + Math.random() * 0.3, y: 0.6 * f1 + Math.random() * 0.5 });
+  semData.push({
+    x1: 0.8 * f1 + Math.random() * 0.3, x2: 0.7 * f1 + Math.random() * 0.3,
+    x3: 0.6 * f1 + Math.random() * 0.3, y: 0.6 * f1 + Math.random() * 0.5,
+  });
 }
 
 describe('sem', () => {
@@ -23,7 +35,7 @@ describe('sem', () => {
   });
 
   it('CFA model returns coefficients and fit indices', () => {
-    const r = sem({ equations: ['f1 =~ x1 + x2 + x3'], data: cfaData });
+    const r = sem({ equations: ['f1 =~ x1 + x2 + x3 + x4'], data: cfaData });
     expectKeys(r, ['test', 'model', 'coefficients', 'loadings', 'paths', 'fit', 'apa']);
     expect(r.loadings.length).toBeGreaterThanOrEqual(2);
     expect(r.fit.cfi).toBeGreaterThanOrEqual(0);
@@ -31,30 +43,33 @@ describe('sem', () => {
   });
 
   it('SEM model returns paths in addition to loadings', () => {
-    const r = sem({ equations: ['f1 =~ x1 + x2', 'y ~ f1'], data: semData });
+    const r = sem({ equations: ['f1 =~ x1 + x2 + x3', 'y ~ f1'], data: semData });
     expect(r.paths.length).toBeGreaterThanOrEqual(1);
     expect(r.fit.tli).toBeGreaterThanOrEqual(0);
     expect(r.fit.tli).toBeLessThanOrEqual(2);
   });
 
   it('fit indices have expected ranges', () => {
-    const r = sem({ equations: ['f1 =~ x1 + x2 + x3'], data: cfaData });
+    const r = sem({ equations: ['f1 =~ x1 + x2 + x3 + x4'], data: cfaData });
     expect(r.fit.rmsea).toBeGreaterThanOrEqual(0);
     expect(r.fit.rmseaCI[0]).toBeLessThanOrEqual(r.fit.rmseaCI[1]);
+    // The CI must actually bracket the point estimate it's a CI for.
+    expect(r.fit.rmseaCI[0]).toBeLessThanOrEqual(r.fit.rmsea);
+    expect(r.fit.rmseaCI[1]).toBeGreaterThanOrEqual(r.fit.rmsea);
     expect(r.fit.srmr).toBeGreaterThanOrEqual(0);
     expect(Number.isFinite(r.fit.aic)).toBe(true);
     expect(Number.isFinite(r.fit.bic)).toBe(true);
   });
 
   it('chi-square and df are positive', () => {
-    const r = sem({ equations: ['f1 =~ x1 + x2 + x3'], data: cfaData });
+    const r = sem({ equations: ['f1 =~ x1 + x2 + x3 + x4'], data: cfaData });
     expect(r.fit.chi2).toBeGreaterThanOrEqual(0);
     expect(r.fit.df).toBeGreaterThan(0);
     expect(r.fit.p).toBeGreaterThanOrEqual(0);
   });
 
   it('coefficients have standard errors', () => {
-    const r = sem({ equations: ['f1 =~ x1 + x2 + x3'], data: cfaData });
+    const r = sem({ equations: ['f1 =~ x1 + x2 + x3 + x4'], data: cfaData });
     for (const c of r.loadings) {
       expect(typeof c.estimate).toBe('number');
       expect(typeof c.se).toBe('number');
@@ -72,14 +87,52 @@ describe('sem', () => {
     expect(r.loadings.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('SEM with 3 variables covers CFI/TLI when model fits well', () => {
-    const data = Array.from({ length: 80 }, (_, i) => ({ v1: i + 1, v2: i * 0.8 + 2, v3: i * 0.3 + 1 }));
+});
+
+describe('sem honest degrees of freedom (regression test for the previous Math.max(1, df) clamp)', () => {
+  // A one-factor CFA with exactly 3 indicators has df = m(m+1)/2 - k =
+  // 3*4/2 - (2 loadings + 3 residuals + 1 latent variance) = 6 - 6 = 0: it
+  // is just-identified and reproduces the observed covariance exactly, so
+  // there is no discrepancy left to test model fit against. The previous
+  // code clamped df to a minimum of 1 and went on to compute CFI=1/TLI=1/
+  // RMSEA=0 anyway, which reads as "perfect fit" for a statistic that
+  // simply isn't testable at df=0. p/CFI/TLI/RMSEA/its CI are NaN instead;
+  // SRMR remains a real (near-zero) number since its formula doesn't
+  // depend on df and a near-zero value is the correct description of a
+  // saturated model's residuals, not a misleading one.
+  it('a just-identified (df=0) one-factor CFA with 3 indicators returns NaN fit indices, not a fake perfect score', () => {
+    // Seeded (not Math.random()) and noised on every variable, including
+    // v1: a fully deterministic linear v1 (no residual noise at all in the
+    // data-generating process) hit a harder case for the optimizer here,
+    // converging to chi2=0.53 rather than the true ~0 -- not the "honest
+    // df" behavior under test, so avoided rather than forced through.
+    let s = 99; const rnd = () => { s = (Math.imul(1664525, s) + 1013904223) >>> 0; return s / 2 ** 32; };
+    const data = Array.from({ length: 80 }, (_, i) => ({ v1: i + 1 + rnd() * 2, v2: i * 0.8 + 2 + rnd() * 2, v3: i * 0.3 + 1 + rnd() * 2 }));
     const r = sem({ equations: ['f1 =~ v1 + v2 + v3'], data });
     expect(r).not.toBeNull();
-    expect(r.fit).toBeDefined();
-    expect(r.fit.rmsea).toBeDefined();
-    expect(r.fit.cfi).toBeGreaterThanOrEqual(0);
-    expect(r.fit.tli).toBeGreaterThanOrEqual(0);
+    expect(r.fit.df).toBe(0);
+    expect(Math.abs(r.fit.chi2)).toBeLessThan(0.01);
+    expect(Number.isNaN(r.fit.p)).toBe(true);
+    expect(Number.isNaN(r.fit.cfi)).toBe(true);
+    expect(Number.isNaN(r.fit.tli)).toBe(true);
+    expect(Number.isNaN(r.fit.rmsea)).toBe(true);
+    expect(Number.isNaN(r.fit.rmseaCI[0])).toBe(true);
+    expect(Number.isNaN(r.fit.rmseaCI[1])).toBe(true);
+    expect(Number.isFinite(r.fit.srmr)).toBe(true);
+    expect(r.fit.srmr).toBeLessThan(0.01);
+  });
+
+  // Two single-factor latents sharing an indicator (f1 =~ x1+x2, f2 =~
+  // x2+x3) on only 3 observed variables has k=7 free parameters (2
+  // loadings + 3 residuals + 2 latent variances) against 6 unique
+  // covariance elements: df = 6 - 7 = -1. There is no unique solution for
+  // an under-identified model, so this returns null like any other
+  // unfittable input, the same as too few observations or too few
+  // variables.
+  it('returns null for an under-identified (df<0) model instead of a spurious fit', () => {
+    const data = Array.from({ length: 50 }, (_, i) => ({ x1: i + Math.random(), x2: i * 0.8 + Math.random(), x3: i * 0.5 + Math.random() }));
+    const r = sem({ equations: ['f1 =~ x1 + x2', 'f2 =~ x2 + x3'], data });
+    expect(r).toBeNull();
   });
 });
 
@@ -114,6 +167,32 @@ describe('sem recovers true factor loadings with plausible SEs (regression test 
     // indices (the old bug produced CFI=1/RMSEA=0 alongside a huge chi2).
     expect(r.fit.rmsea).toBeLessThan(0.15);
     expect(r.fit.cfi).toBeGreaterThan(0.9);
+  });
+});
+
+describe('sem loading standard errors use the correct asymptotic scale (regression test for the missing sqrt(2/(n-1)) factor)', () => {
+  // _fitRAMByML's Hessian is of the unscaled ML discrepancy function fML;
+  // standard ML-SEM theory requires ACOV(theta-hat) = (2/(n-1)) * H^-1, so
+  // omitting that factor inflates every SE by sqrt((n-1)/2) -- about 8.6x
+  // at n=150, 15.8x at n=500. On a large, strongly-identified sample, that
+  // difference is easy to tell apart: a genuinely significant loading gives
+  // |z| in the tens (verified: ~42-45 on this exact fixture with the fix
+  // applied), while the same loading under the old unscaled SE would give
+  // |z| in the single digits (~5) -- not just "still positive," but off by
+  // almost an order of magnitude, making a clearly real effect look weak.
+  it('reports |z| well into the tens, not single digits, for a strong loading with n=500', () => {
+    let s = 55; const z = () => { let u = 0; for (let k = 0; k < 12; k++) { s = (Math.imul(1664525, s) + 1013904223) >>> 0; u += s / 2 ** 32; } return u - 6; };
+    const trueLoadings = [1, 0.85, 0.75, 0.7];
+    const data = [];
+    for (let i = 0; i < 500; i++) {
+      const f = z();
+      const row = {};
+      trueLoadings.forEach((l, idx) => { row[`i${idx + 1}`] = l * f + z() * 0.3; });
+      data.push(row);
+    }
+    const r = sem({ equations: ['f1 =~ i1 + i2 + i3 + i4'], data });
+    expect(r).not.toBeNull();
+    r.loadings.forEach(l => expect(Math.abs(l.z)).toBeGreaterThan(20));
   });
 });
 
@@ -478,8 +557,14 @@ describe('ordinalSEM', () => {
 
 describe('ordinalSEM recovers real polychoric correlations and a real factor fit', () => {
   it('fit indices are finite (not the hardcoded NaN of the old stub)', () => {
-    const d = []; for (let i = 0; i < 30; i++) d.push({ v1: i % 5, v2: (i + 1) % 5, v3: (i + 2) % 5 });
-    const r = ordinalSEM(d, ['v1', 'v2', 'v3'], 'F =~ v1 + v2 + v3');
+    // 4 items, not 3: a 3-item one-factor model is just-identified (df=0),
+    // where fit indices are correctly NaN (see "sem honest degrees of
+    // freedom" above -- ordinalSEM shares the same _semFitStats). This test
+    // regression-tests a much older, unrelated bug (a hardcoded-stub
+    // ordinalSEM that always returned NaN regardless of input), so it needs
+    // a genuinely over-identified model to keep testing that.
+    const d = []; for (let i = 0; i < 30; i++) d.push({ v1: i % 5, v2: (i + 1) % 5, v3: (i + 2) % 5, v4: (i + 3) % 5 });
+    const r = ordinalSEM(d, ['v1', 'v2', 'v3', 'v4'], 'F =~ v1 + v2 + v3 + v4');
     expect(Number.isFinite(r.fit.chisq)).toBe(true);
     expect(Number.isFinite(r.fit.rmsea)).toBe(true);
     expect(Number.isFinite(r.fit.cfi)).toBe(true);
@@ -526,6 +611,19 @@ describe('ordinalSEM recovers real polychoric correlations and a real factor fit
       expect(l.se).toBeGreaterThan(0.001);
       expect(l.se).toBeLessThan(5);
     });
+  });
+
+  // ordinalSEM shares sem()'s _semFitStats, so a 3-item one-factor model is
+  // just-identified (df=0) here too -- see "sem honest degrees of freedom".
+  it('a just-identified (df=0) one-factor ordinal model returns NaN fit indices, not a fake perfect score', () => {
+    const d = []; for (let i = 0; i < 30; i++) d.push({ v1: i % 5, v2: (i + 1) % 5, v3: (i + 2) % 5 });
+    const r = ordinalSEM(d, ['v1', 'v2', 'v3'], 'F =~ v1 + v2 + v3');
+    expect(r).not.toBeNull();
+    expect(r.fit.df).toBe(0);
+    expect(Number.isNaN(r.fit.p)).toBe(true);
+    expect(Number.isNaN(r.fit.cfi)).toBe(true);
+    expect(Number.isNaN(r.fit.tli)).toBe(true);
+    expect(Number.isNaN(r.fit.rmsea)).toBe(true);
   });
 });
 

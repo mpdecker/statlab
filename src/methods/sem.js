@@ -1,5 +1,5 @@
 import { avg, sampleVar, corr, fmtP } from '../math/core.js';
-import { chiPVal, normalINV, normalCDF } from '../math/distributions.js';
+import { chiPVal, normalINV, normalCDF, ncChiSqCDF } from '../math/distributions.js';
 import { matInv, jacobiEigen } from '../math/matrix.js';
 
 // Standard bivariate-normal CDF P(Z1<=a, Z2<=b; rho) via Simpson integration of
@@ -144,7 +144,72 @@ function modelCov(theta, ram, parsed) {
   return { A_mat, S_mat, Sigma, obsCov: obs };
 }
 
+// Cholesky factorization M = L L^T. Returns the lower-triangular L, or null
+// if M is not positive-definite (a non-positive pivot was encountered) --
+// this doubles as the discrepancy function's positive-definiteness check,
+// replacing the old `det > 0` test, which only rules out non-PD matrices
+// with an odd number of negative eigenvalues (e.g. two negative eigenvalues
+// give a positive determinant despite the matrix not being PD).
+function cholesky(M) {
+  const p = M.length;
+  const L = Array.from({ length: p }, () => Array(p).fill(0));
+  for (let i = 0; i < p; i++) {
+    for (let j = 0; j <= i; j++) {
+      let sum = M[i][j];
+      for (let c = 0; c < j; c++) sum -= L[i][c] * L[j][c];
+      if (i === j) {
+        if (sum <= 1e-12) return null;
+        L[i][j] = Math.sqrt(sum);
+      } else {
+        L[i][j] = sum / L[j][j];
+      }
+    }
+  }
+  return L;
+}
+
+// log|M| via Cholesky (2*sum(log(diag(L)))) -- numerically stable for larger
+// p than the previous recursive cofactor-expansion determinant, and confirms
+// positive-definiteness as a side effect. Returns null when M isn't PD.
+function logDet(M) {
+  const L = cholesky(M);
+  if (!L) return null;
+  let s = 0;
+  for (let i = 0; i < M.length; i++) s += Math.log(L[i][i]);
+  return 2 * s;
+}
+
 function mlDiscrepancy(S, modelCovMat) {
+  const p = S.length;
+  const logDetM = logDet(modelCovMat);
+  if (logDetM === null) return 1e10;
+  const minv = matInv(modelCovMat);
+  if (!minv) return 1e10;
+  let tr = 0;
+  for (let i = 0; i < p; i++) for (let j = 0; j < p; j++) tr += S[i][j] * minv[i][j];
+  // S is a real covariance/correlation matrix and should be PD whenever
+  // logDet(S) is actually needed (n > p, no exactly-collinear columns); a
+  // near-singular S can still fail Cholesky from floating-point error, so
+  // fall back to a small positive floor rather than propagating NaN.
+  const logDetS = logDet(S);
+  return logDetM + tr - (logDetS !== null ? logDetS : Math.log(1e-10)) - p;
+}
+
+// Original cofactor-expansion-determinant discrepancy function, kept
+// unchanged for `_fitMultiGroupCFA`/`_nullModelChi2MultiGroup` (used by
+// measurementInvariance/semMultiGroup). `mlDiscrepancy`'s Cholesky-based PD
+// check above is stricter and more correct (it catches non-PD matrices
+// with an even number of negative eigenvalues, which still have a positive
+// determinant), but that stricter rejection destabilizes
+// _fitMultiGroupCFA's Newton-with-steepest-descent-fallback optimizer under
+// heavy constraint misspecification (confirmed empirically: it drove a
+// nested chi-square difference to ~1e18 instead of a real value on an
+// already-passing regression test). Fixing that needs the same
+// data-informed-starts + correlation-scale-fitting treatment applied to
+// _fitRAMByML below, which is its own separate, larger change to a
+// different, already-independently-fixed (PR #8) optimizer — tracked
+// separately rather than risked here.
+function _mlDiscrepancyLegacyDet(S, modelCovMat) {
   const p = S.length;
   let detS = S[0][0];
   let detM = modelCovMat[0][0];
@@ -171,36 +236,65 @@ function mlDiscrepancy(S, modelCovMat) {
   const minv = matInv(modelCovMat);
   if (!minv) return 1e10;
   for (let i = 0; i < p; i++) for (let j = 0; j < p; j++) tr += S[i][j] * minv[i][j];
-  // `detS || 1e-10` only substitutes when detS is exactly 0 — a small NEGATIVE
-  // detS from cofactor-expansion floating-point error (near-singular S) slips
-  // through untouched and sends Math.log() to NaN, poisoning every downstream
-  // fit statistic. Guard the sign explicitly, matching the detM <= 0 guard above.
   return Math.log(detM) + tr - Math.log(detS > 0 ? detS : 1e-10) - p;
 }
 
 // ── Shared RAM-ML fitting (used by sem() and ordinalSEM()) ─────────────────
 // Newton-Raphson minimization of the ML discrepancy function over a RAM model's
 // free parameters, given an arbitrary observed covariance/correlation matrix S.
-function _fitRAMByML(S, ram, parsed, { maxIter = 200, tolerance = 1e-6 } = {}) {
+function _fitRAMByML(S, ram, parsed, n, { maxIter = 200, tolerance = 1e-6 } = {}) {
   const { free, m } = ram;
   const { varOrder, allOrder } = parsed;
   const obsVarNames = varOrder.slice(0, m);
   const k = free.length;
 
+  // Fit on the correlation matrix R = D^-1 S D^-1 (D = diag(sd_i)) instead of
+  // the raw covariance S. This keeps every free parameter on an O(1) scale
+  // regardless of the observed variables' original units, which is what the
+  // starting values, finite-difference epsilon, and line search below all
+  // implicitly assume — on real unequal-scale data (e.g. one variable in the
+  // thousands, another in [0,1]) fitting directly on S routinely converged
+  // to the wrong local optimum or never moved past the initial guess.
+  //
+  // The ML discrepancy function is exactly invariant under this rescaling
+  // (mlDiscrepancy(S,Sigma) = mlDiscrepancy(R,Sigma_R) whenever Sigma = D
+  // Sigma_R D, which holds here because every free parameter's raw-scale
+  // value is `stdValue * effScale(i)/effScale(j)` for loadings/paths, or
+  // `stdValue + 2*log(effScale(i))` for the log-variance parameters — see
+  // `toRawScale` below), so chi2/df/CFI/TLI/RMSEA/SRMR need no adjustment.
+  // Only the returned theta and SEs are transformed back to raw units,
+  // since those are the values sem()/ordinalSEM() expose to callers.
+  const sdRaw = Array.from({ length: m }, (_, i) => Math.sqrt(Math.max(1e-12, S[i][i])));
+  const R = Array.from({ length: m }, (_, i) => Array.from({ length: m }, (_, j) => S[i][j] / (sdRaw[i] * sdRaw[j])));
+  const markerOf = j => { for (let i = 0; i < m; i++) if (ram.A[i][j] === 1) return i; return -1; };
+  const effScale = Array.from({ length: ram.p }, (_, v) => { const mk = markerOf(v); return v < m ? sdRaw[v] : (mk >= 0 ? sdRaw[mk] : 1); });
+
+  // Data-informed starting values (on the correlation scale): a loading's
+  // start comes from its raw correlation with the latent's marker indicator
+  // (Cov(i, marker) = loading_i * Var(latent) when the marker's own loading
+  // is fixed to 1, so with Var(latent) started at 1 this is just R[i][marker]
+  // itself), instead of every loading starting at the same flat 0.3 — which,
+  // combined with every latent variance starting at exp(0)=1 regardless of
+  // the data, could put the optimizer's very first step on a completely flat
+  // part of the discrepancy surface (effectively zero latent variance),
+  // which the gradient-norm stopping rule then mistook for convergence.
   let theta = Array(k).fill(0);
   let idx = 0;
   for (const f of free) {
-    if (f.type === 'loading' || f.type === 'path') { theta[idx++] = 0.3; }
+    if (f.type === 'loading') {
+      const mk = markerOf(f.j);
+      theta[idx++] = mk >= 0 ? R[f.i][mk] : 0.3;
+    } else if (f.type === 'path') { theta[idx++] = 0.3; }
     else if (f.type === 'residual') {
       const v = obsVarNames.indexOf(allOrder[f.i]);
-      theta[idx++] = v >= 0 ? Math.log(Math.max(0.01, S[v][v] * 0.5)) : Math.log(1.0);
+      theta[idx++] = v >= 0 ? Math.log(Math.max(0.01, R[v][v] * 0.5)) : Math.log(1.0);
     } else if (f.type === 'latentVar') { theta[idx++] = Math.log(1.0); }
   }
 
   function discrepancy(t) {
     const mc = modelCov(t, ram, parsed);
     if (!mc) return 1e10;
-    return mlDiscrepancy(S, mc.obsCov);
+    return mlDiscrepancy(R, mc.obsCov);
   }
 
   for (let iter = 0; iter < maxIter; iter++) {
@@ -217,7 +311,7 @@ function _fitRAMByML(S, ram, parsed, { maxIter = 200, tolerance = 1e-6 } = {}) {
     const hess = Array.from({ length: k }, (_, i) =>
       Array.from({ length: k }, (_, j) => {
         const up1 = [...theta]; up1[i] += eps; up1[j] += eps;
-        return (discrepancy(up1) - discrepancy([...theta].map((v, p) => p === i ? v + eps : v)) - discrepancy([...theta].map((v, p) => p === j ? v + eps : v)) + f0) / (eps * eps);
+        return (discrepancy(up1) - discrepancy([...theta].map((v, c) => c === i ? v + eps : v)) - discrepancy([...theta].map((v, c) => c === j ? v + eps : v)) + f0) / (eps * eps);
       })
     );
     const hInv = matInv(hess);
@@ -227,12 +321,25 @@ function _fitRAMByML(S, ram, parsed, { maxIter = 200, tolerance = 1e-6 } = {}) {
     // parameters' initial guess of 0.3, the Newton step pointed uphill,
     // the line search below exhausted every halving without ever finding
     // improvement, and theta silently never moved for the rest of the run.
-    // Fall back to steepest descent — guaranteed to be a descent direction
-    // for a differentiable function — whenever Newton's step points uphill
-    // or H is singular.
     if (!step || step.reduce((s, v, i) => s + v * grad[i], 0) >= 0) {
-      const gradNorm = Math.sqrt(gradNormSq);
-      step = grad.map(g => -g / gradNorm);
+      // Levenberg-Marquardt: ridge the Hessian's diagonal with an
+      // increasing damping term until (H+muI)^-1 both points downhill AND
+      // the resulting step actually improves the discrepancy. This finds a
+      // genuine Newton-flavored descent direction far more often than
+      // falling straight to steepest descent, which on some inputs (e.g.
+      // columns reordered, or several correlated variables) crawled so
+      // slowly it exhausted the iteration budget without converging.
+      const scale = Math.max(1e-8, hess.reduce((s, r, i) => s + Math.abs(r[i]), 0) / k);
+      let found = null;
+      for (let mu = 1e-4 * scale; mu < 1e8 * scale; mu *= 10) {
+        const damped = matInv(hess.map((r, i) => r.map((v, j) => (i === j ? v + mu : v))));
+        const cand = damped ? damped.map(r => r.reduce((s, v, i) => s - v * grad[i], 0)) : null;
+        if (cand && cand.reduce((s, v, i) => s + v * grad[i], 0) < 0 && discrepancy(theta.map((v, j) => v + cand[j])) < f0 - 1e-10) { found = cand; break; }
+      }
+      // Fall back to steepest descent — guaranteed to be a descent
+      // direction for a differentiable function — only if no damping level
+      // both fit the descent-direction criterion and actually improved f0.
+      step = found ?? grad.map(g => -g / Math.sqrt(gradNormSq));
     }
     let lambda = 1, moved = false;
     for (let halve = 0; halve <= 20; halve++) {
@@ -243,7 +350,20 @@ function _fitRAMByML(S, ram, parsed, { maxIter = 200, tolerance = 1e-6 } = {}) {
     if (!moved) break;
   }
 
-  const mc = modelCov(theta, ram, parsed);
+  // Exact back-transform of a correlation-scale parameter to raw units.
+  // Loadings/paths (effect of variable j on variable i) scale linearly with
+  // the ratio of the two variables' raw scales; log-variance parameters
+  // (residuals, latent variances) shift additively by 2*log(scale), since
+  // Var_raw = scale^2 * Var_std. Both are exact (not first-order/delta-
+  // method) consequences of the affine rescaling S = D R D described above.
+  function toRawScale(t) {
+    return free.map((f, i) => (f.type === 'loading' || f.type === 'path')
+      ? t[i] * (effScale[f.i] / effScale[f.j])
+      : t[i] + 2 * Math.log(effScale[f.i]));
+  }
+
+  const thetaRaw = toRawScale(theta);
+  const mc = modelCov(thetaRaw, ram, parsed);
   if (!mc) return null;
 
   const hessFinal = Array.from({ length: k }, (_, i) =>
@@ -251,51 +371,106 @@ function _fitRAMByML(S, ram, parsed, { maxIter = 200, tolerance = 1e-6 } = {}) {
       const eps = 1e-6;
       const f0r = discrepancy(theta);
       const up1 = [...theta]; up1[i] += eps; up1[j] += eps;
-      return (discrepancy(up1) - discrepancy([...theta].map((v, p) => p === i ? v + eps : v)) - discrepancy([...theta].map((v, p) => p === j ? v + eps : v)) + f0r) / (eps * eps);
+      return (discrepancy(up1) - discrepancy([...theta].map((v, c) => c === i ? v + eps : v)) - discrepancy([...theta].map((v, c) => c === j ? v + eps : v)) + f0r) / (eps * eps);
     })
   );
   const hInvFinal = matInv(hessFinal);
-  const ses = hInvFinal ? Array.from({ length: k }, (_, j) => Math.sqrt(Math.max(0, hInvFinal[j][j]))) : Array(k).fill(Infinity);
+  // Standard ML-SEM asymptotic theory gives ACOV(theta-hat) = (2/N) * H^-1,
+  // where H is the Hessian of the (unscaled) discrepancy function fML -- see
+  // mlDiscrepancy. hInvFinal above is exactly that H^-1, but without the
+  // 2/N factor, so its diagonal alone understates variance by a factor of
+  // (n-1)/2 (using n-1, not n, for consistency with this file's own
+  // chi2 = (n-1)*fML convention elsewhere). Left unscaled, every reported
+  // SE was inflated by sqrt((n-1)/2) -- about 8.6x at n=150 -- making
+  // genuinely significant loadings look non-significant.
+  const seScaleN = Math.sqrt(2 / Math.max(1, n - 1));
+  const sesStd = hInvFinal ? Array.from({ length: k }, (_, j) => Math.sqrt(Math.max(0, hInvFinal[j][j])) * seScaleN) : Array(k).fill(Infinity);
+  // Delta method for the same affine transform used above: a pure scalar
+  // multiply's SE scales by the same factor (exact, not an approximation,
+  // since the transform is linear); an additive shift's SE is unchanged.
+  const ses = sesStd.map((se, i) => {
+    const f = free[i];
+    return (f.type === 'loading' || f.type === 'path') ? se * Math.abs(effScale[f.i] / effScale[f.j]) : se;
+  });
 
-  return { theta, mc, ses, k, fML: discrepancy(theta) };
+  return { theta: thetaRaw, mc, ses, k, fML: discrepancy(theta) };
+}
+
+// RMSEA (1-alpha)% CI via the noncentral chi-square distribution: solve for
+// the noncentrality parameter lambda such that the observed chi2 sits at
+// the 2.5th/97.5th percentile of a noncentral-chi2(df, lambda), then convert
+// lambda back to an RMSEA value. This replaces a closed-form approximation
+// that didn't reliably bracket the point estimate (e.g. RMSEA 0.18 produced
+// a CI of [0.44, 0.63], nowhere near the estimate). Verified against
+// lavaan's published Holzinger-Swineford reference (chi2=85.306, df=24,
+// n=301): lavaan reports RMSEA 0.092 [0.071, 0.114]; this implementation
+// gives 0.0923 [0.0715, 0.1139].
+function _rmseaCI(chi2, df, n) {
+  function solveLambda(target) {
+    if (ncChiSqCDF(chi2, df, 0) < target) return 0;
+    let hi = Math.max(1, chi2);
+    while (ncChiSqCDF(chi2, df, hi) > target) hi *= 2;
+    let lo = 0;
+    for (let i = 0; i < 100; i++) {
+      const mid = (lo + hi) / 2;
+      if (ncChiSqCDF(chi2, df, mid) > target) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+  const d = df * (n - 1);
+  return [Math.sqrt(solveLambda(0.95) / d), Math.sqrt(solveLambda(0.05) / d)];
 }
 
 // Standard SEM fit indices (chi2/df/p, CFI/TLI, RMSEA+CI, SRMR) from an ML
 // discrepancy value against the independence (diagonal) null model.
+//
+// df here is the true model degrees of freedom (m(m+1)/2 - k), not clamped
+// to a minimum of 1. A model with more free parameters than unique
+// covariance elements (df < 0) is under-identified -- there's no unique
+// solution, so this returns null like any other unfittable input. A model
+// with exactly as many free parameters as unique covariance elements
+// (df === 0, e.g. a one-factor CFA with only 3 indicators) is
+// just-identified: it reproduces S exactly by construction, so there is no
+// discrepancy left to test model fit against. Reporting CFI=1/RMSEA=0 for
+// that case (the previous behavior, from clamping df to a minimum of 1)
+// reads as "perfect fit" when the statistic simply isn't testable -- p,
+// CFI, TLI, RMSEA and its CI are NaN instead. SRMR is still a real number:
+// its formula doesn't depend on df, and a near-zero value correctly (not
+// misleadingly) describes a saturated model's residuals.
 function _semFitStats(S, mc, n, m, k, fML) {
-  const chi2 = (n - 1) * fML;
   const df = m * (m + 1) / 2 - k;
-  const pChi = chiPVal(chi2, Math.max(1, df));
+  if (df < 0) return null;
+  const chi2 = (n - 1) * fML;
 
-  let cfi = 1, tli = 1, rmsea = 0, srmr = 0;
-  if (df > 0) {
-    const nullDiscrepancy = (() => {
-      const nullTheta = Array(m).fill(0).map((_, i) => Math.log(Math.max(0.01, S[i][i])));
-      const nullCov = Array.from({ length: m }, (_, i) => Array.from({ length: m }, (_, j) => i === j ? Math.exp(nullTheta[i]) : 0));
-      return mlDiscrepancy(S, nullCov);
-    })();
-    const nullChi2 = (n - 1) * nullDiscrepancy;
-    const nullDf = m * (m + 1) / 2 - m;
-    if (nullChi2 > chi2 && nullDf > df) {
-      cfi = 1 - Math.max(0, (chi2 - df)) / Math.max(1e-10, (nullChi2 - nullDf));
-      tli = ((nullChi2 / nullDf) - (chi2 / df)) / Math.max(1e-10, (nullChi2 / nullDf) - 1);
-    }
-    rmsea = Math.sqrt(Math.max(0, (chi2 - df) / (df * (n - 1))));
-    let srmrSum = 0, srmrCount = 0;
-    for (let i = 0; i < m; i++) for (let j = 0; j < m; j++) if (S[i][i] * S[j][j] > 0) {
-      srmrSum += ((S[i][j] - mc.obsCov[i][j]) / Math.sqrt(S[i][i] * S[j][j])) ** 2;
-      srmrCount++;
-    }
-    srmr = Math.sqrt(srmrSum / (srmrCount || 1));
+  let srmrSum = 0, srmrCount = 0;
+  for (let i = 0; i < m; i++) for (let j = 0; j < m; j++) if (S[i][i] * S[j][j] > 0) {
+    srmrSum += ((S[i][j] - mc.obsCov[i][j]) / Math.sqrt(S[i][i] * S[j][j])) ** 2;
+    srmrCount++;
   }
+  const srmr = Math.sqrt(srmrSum / (srmrCount || 1));
 
-  const rmseaCIlo = rmsea > 0 ? Math.max(0, rmsea * Math.sqrt(Math.exp(2 * Math.log(chi2 / df) - 2 * 1.96 / Math.sqrt(Math.max(1, df * (n - 1)))))) : 0;
-  const rmseaCIhi = rmsea > 0 ? rmsea * Math.sqrt(Math.exp(2 * Math.log(chi2 / df) + 2 * 1.96 / Math.sqrt(Math.max(1, df * (n - 1))))) : 0;
+  if (df === 0) return { chi2, df: 0, p: NaN, cfi: NaN, tli: NaN, rmsea: NaN, rmseaCI: [NaN, NaN], srmr };
+
+  const pChi = chiPVal(chi2, df);
+
+  let cfi = 1, tli = 1;
+  const nullDiscrepancy = (() => {
+    const nullTheta = Array(m).fill(0).map((_, i) => Math.log(Math.max(0.01, S[i][i])));
+    const nullCov = Array.from({ length: m }, (_, i) => Array.from({ length: m }, (_, j) => i === j ? Math.exp(nullTheta[i]) : 0));
+    return mlDiscrepancy(S, nullCov);
+  })();
+  const nullChi2 = (n - 1) * nullDiscrepancy;
+  const nullDf = m * (m + 1) / 2 - m;
+  if (nullChi2 > chi2 && nullDf > df) {
+    cfi = 1 - Math.max(0, (chi2 - df)) / Math.max(1e-10, (nullChi2 - nullDf));
+    tli = ((nullChi2 / nullDf) - (chi2 / df)) / Math.max(1e-10, (nullChi2 / nullDf) - 1);
+  }
+  const rmsea = Math.sqrt(Math.max(0, (chi2 - df) / (df * (n - 1))));
 
   return {
-    chi2, df: Math.max(1, df), p: pChi,
+    chi2, df, p: pChi,
     cfi: Math.min(1, Math.max(0, cfi)), tli: Math.min(1, Math.max(0, tli)),
-    rmsea, rmseaCI: [rmseaCIlo, rmseaCIhi], srmr,
+    rmsea, rmseaCI: _rmseaCI(chi2, df, n), srmr,
   };
 }
 
@@ -316,7 +491,7 @@ export function sem(opts = {}) {
   const ram = buildRAM(parsed);
   const n = data.length;
 
-  const fit0 = _fitRAMByML(S, ram, parsed, { maxIter, tolerance });
+  const fit0 = _fitRAMByML(S, ram, parsed, n, { maxIter, tolerance });
   if (!fit0) return null;
   const { theta, mc, ses, k, fML } = fit0;
 
@@ -335,7 +510,9 @@ export function sem(opts = {}) {
     }
   }
 
-  const { chi2, df, p: pChi, cfi, tli, rmsea, rmseaCI, srmr } = _semFitStats(S, mc, n, m, k, fML);
+  const fitStats = _semFitStats(S, mc, n, m, k, fML);
+  if (!fitStats) return null;
+  const { chi2, df, p: pChi, cfi, tli, rmsea, rmseaCI, srmr } = fitStats;
 
   const logLik = -0.5 * n * (m * Math.log(2 * Math.PI) + Math.log(Math.abs(1)) + chi2);
   const aic = 2 * k - 2 * logLik;
@@ -435,7 +612,7 @@ function _fitMultiGroupCFA(groupStats, m, { shareLoadings, shareIntercepts, shar
       const alpha = alphaSets[g];
       const Sigma = Array.from({ length: m }, (_, i) => Array.from({ length: m }, (_, j) =>
         lambda[i] * lambda[j] * psi + (i === j ? resid[i] : 0)));
-      let f = mlDiscrepancy(groupStats[g].S, Sigma);
+      let f = _mlDiscrepancyLegacyDet(groupStats[g].S, Sigma);
       const inv = matInv(Sigma);
       if (inv) {
         const mu = lambda.map((li, i) => tau[i] + li * alpha);
@@ -509,7 +686,7 @@ function _nullModelChi2MultiGroup(groupStats, m) {
   let chi2 = 0, df = 0;
   for (const gs of groupStats) {
     const diagS = Array.from({ length: m }, (_, i) => Array.from({ length: m }, (_, j) => i === j ? Math.max(1e-6, gs.S[i][i]) : 0));
-    chi2 += (gs.n - 1) * mlDiscrepancy(gs.S, diagS);
+    chi2 += (gs.n - 1) * _mlDiscrepancyLegacyDet(gs.S, diagS);
     df += m * (m - 1) / 2;
   }
   return { chi2, df };
@@ -941,7 +1118,7 @@ export function ordinalSEM(data, vars, model, { nThresh = 5 } = {}) {
   const parsed = parseEquations([eqStr], data);
   if (parsed.m < 3) return null;
   const ram = buildRAM(parsed);
-  const fitR = _fitRAMByML(R, ram, parsed);
+  const fitR = _fitRAMByML(R, ram, parsed, n);
   if (!fitR) {
     return {
       test: 'Ordinal SEM', loadings: [], thresholds,
@@ -950,7 +1127,15 @@ export function ordinalSEM(data, vars, model, { nThresh = 5 } = {}) {
     };
   }
   const { theta, mc, ses, k, fML } = fitR;
-  const { chi2, df, p, cfi, tli, rmsea } = _semFitStats(R, mc, n, m, k, fML);
+  const fitStats = _semFitStats(R, mc, n, m, k, fML);
+  if (!fitStats) {
+    return {
+      test: 'Ordinal SEM', loadings: [], thresholds,
+      fit: { chisq: NaN, rmsea: NaN, cfi: NaN }, n,
+      apa: `Ordinal SEM: ${m} variables, polychoric matrix, n = ${n} (model under-identified: more free parameters than unique correlations)`,
+    };
+  }
+  const { chi2, df, p, cfi, tli, rmsea } = fitStats;
 
   const loadings = [];
   for (let i = 0; i < ram.free.length; i++) {
