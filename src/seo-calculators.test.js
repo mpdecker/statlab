@@ -347,8 +347,26 @@ describe('SEO calculator pages', () => {
       'stochastic-volatility-heston-model',
       'jump-diffusion-merton-model',
       'black-scholes-greeks-implied-volatility',
+      'cox-ingersoll-ross-cir-short-rate',
+      'vasicek-short-rate-model',
+      'hull-white-one-factor-model',
+      'cox-ross-rubinstein-binomial-tree',
+      'black-76-futures-option-pricing',
+      'garman-kohlhagen-fx-option-pricing',
+      'parkinson-volatility-high-low',
+      'garman-klass-ohlc-volatility',
+      'yang-zhang-ohlc-gap-volatility',
+      'rogers-satchell-drift-independent-volatility',
+      'hodrick-prescott-filter-hp-trend',
+      'christiano-fitzgerald-bandpass-filter',
+      'bk-bandpass-filter-baxter-king',
+      'beveridge-nelson-decomposition-bn',
+      'kalman-filter-state-space-estimator',
+      'extended-kalman-filter-ekf-nonlinear',
+      'unscented-kalman-filter-ukf-sigma-points',
+      'particle-filter-sequential-monte-carlo-smc',
     ]);
-    expect(calculatorPages.length).toBe(340);
+    expect(calculatorPages.length).toBe(358);
   });
 
   it('renders static HTML with canonical metadata, math formulas, code snippets, JSON-LD, and open CTAs', () => {

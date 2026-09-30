@@ -8600,6 +8600,456 @@ export const calculatorPages = [
     ],
     workbenchId: 'ts_black_scholes',
   },
+  {
+    slug: 'cox-ingersoll-ross-cir-short-rate',
+    title: 'Cox-Ingersoll-Ross (CIR) short rate term structure calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate short-term interest rate paths, zero-coupon bond prices P(t, T), and yield curves under the CIR square-root diffusion SDE model.',
+    keywords: ['CIR model calculator', 'Cox Ingersoll Ross short rate', 'square root interest rate model', 'CIR bond pricing', 'Feller condition CIR'],
+    inputs: ['Initial rate r_0', 'Mean-reversion speed a', 'Long-term mean θ', 'Volatility σ', 'Maturity T'],
+    example: { a: ['r_0 = 0.03, a = 0.2, θ = 0.05', 'σ = 0.10, T = 5.0'], result: '5-Year Bond Price P(0,5) = 0.8124, Zero Yield Y(5) = 4.15%. Feller condition 2aθ = 0.02 > σ² = 0.01 (Satisfied).' },
+    formula: 'dr_t = a(θ - r_t)dt + σ √r_t dW_t; P(t,T) = A(t,T) exp(-B(t,T) r_t)',
+    code: {
+      python: `import numpy as np\ndef cir_bond_price(r0, a, theta, sigma, T):\n    gamma = np.sqrt(a**2 + 2*sigma**2)\n    A = ((2*gamma*np.exp((a+gamma)*T/2)) / ((gamma+a)*(np.exp(gamma*T)-1) + 2*gamma)) ** (2*a*theta/sigma**2)\n    B = (2*(np.exp(gamma*T)-1)) / ((gamma+a)*(np.exp(gamma*T)-1) + 2*gamma)\n    return A * np.exp(-B * r0)`,
+      r: `library(Rquantlib)\n# Price bond or short rate term structure under Cox-Ingersoll-Ross process`,
+      ts: `import { cirShortRate } from '@statlab/core';\nconst res = cirShortRate({ r0: 0.03, a: 0.2, theta: 0.05, sigma: 0.10, T: 5.0 });`,
+    },
+    useCases: [
+      'Modeling interest rate term structures and bond pricing under non-negative rate constraints.',
+      'Simulating mean-reverting operational server utilization dynamics with non-negative lower bounds.'
+    ],
+    when: 'Use when modeling mean-reverting continuous rates that must remain strictly non-negative.',
+    cautions: [
+      'Feller condition 2aθ ≥ σ² ensures the short rate r_t stays strictly positive (>0).',
+      'If Feller condition fails, the rate can touch zero (though zero remains non-attainable).'
+    ],
+    workbenchId: 'ts_cir',
+  },
+  {
+    slug: 'vasicek-short-rate-model',
+    title: 'Vasicek short rate interest rate calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate analytical zero-coupon bond prices, yield curves, and short rate distributions under the Vasicek Ornstein-Uhlenbeck SDE model.',
+    keywords: ['Vasicek model calculator', 'Vasicek short rate', 'Ornstein Uhlenbeck interest rate', 'Vasicek bond price', 'mean reverting short rate'],
+    inputs: ['Initial rate r_0', 'Speed of mean-reversion a', 'Long-run mean b', 'Volatility σ', 'Maturity T'],
+    example: { a: ['r_0 = 0.04, a = 0.15, b = 0.05', 'σ = 0.02, T = 10.0'], result: '10-Year Bond Price P(0,10) = 0.6120, Yield Y(10) = 4.91%. Expected rate E[r_10] = 4.78%.' },
+    formula: 'dr_t = a(b - r_t)dt + σ dW_t; P(t,T) = A(t,T) exp(-B(t,T) r_t)',
+    code: {
+      python: `import numpy as np\ndef vasicek_bond(r0, a, b, sigma, T):\n    B = (1 - np.exp(-a*T)) / a\n    A = np.exp((b - sigma**2 / (2*a**2)) * (B - T) - (sigma**2 * B**2) / (4*a))\n    return A * np.exp(-B * r0)`,
+      r: `library(YieldCurve)\n# Price Vasicek short rate term structure and zero-coupon yields`,
+      ts: `import { vasicekShortRate } from '@statlab/core';\nconst res = vasicekShortRate({ r0: 0.04, a: 0.15, b: 0.05, sigma: 0.02, T: 10.0 });`,
+    },
+    useCases: [
+      'Modeling mean-reverting interest rate term structures with analytical closed-form bond pricing.',
+      'Simulating symmetric mean-reverting operational metrics (e.g. baseline system temperature or latency).'
+    ],
+    when: 'Use for mean-reverting time series where analytical simplicity is preferred over strict non-negativity.',
+    cautions: [
+      'Allows negative interest rates since r_t is normally distributed.',
+      'Constant volatility σ independent of rate level r_t.'
+    ],
+    workbenchId: 'ts_vasicek',
+  },
+  {
+    slug: 'hull-white-one-factor-model',
+    title: 'Hull-White one-factor interest rate model calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate exact yield curve fitting parameters θ(t), short rate tree nodes, and interest rate option prices under the Hull-White no-arbitrage model.',
+    keywords: ['Hull White model calculator', 'Hull White one factor', 'no arbitrage short rate', 'yield curve calibration', 'Hull White option pricing'],
+    inputs: ['Initial yield curve r_0(t)', 'Mean-reversion speed a', 'Volatility σ', 'Option maturity T'],
+    example: { a: ['Yield curve: Flat 4.0%', 'a = 0.10, σ = 0.015', 'T = 2.0 yrs'], result: 'Exact fit to initial yield curve. θ(t=2) = 0.0421. European Caplet price = 12.4 bps.' },
+    formula: 'dr_t = (θ(t) - a r_t)dt + σ dW_t where θ(t) = f’(0,t) + a f(0,t) + (σ²/2a)(1 - e^{-2at})',
+    code: {
+      python: `import QuantLib as ql\n# Construct Hull-White 1-factor model fitted to term structure using QuantLib`,
+      r: `library(RQuantLib)\n# Price Bermudan swaption or caplet under Hull-White model`,
+      ts: `import { hullWhiteOneFactor } from '@statlab/core';\nconst res = hullWhiteOneFactor({ a: 0.10, sigma: 0.015, T: 2.0 });`,
+    },
+    useCases: [
+      'Pricing interest rate swaptions, caps, and floors while exactly matching the current yield curve.',
+      'No-arbitrage scenario generation for financial risk management and ALM.'
+    ],
+    when: 'Use when the model must fit the current observed market yield curve exactly without pricing errors.',
+    cautions: [
+      'Like Vasicek, permits negative short rates.',
+      'Requires numerical derivation of instantaneous forward rate curve f(0,t).'
+    ],
+    workbenchId: 'ts_hull_white',
+  },
+  {
+    slug: 'cox-ross-rubinstein-binomial-tree',
+    title: 'Cox-Ross-Rubinstein (CRR) binomial option pricing calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate American and European option prices, early exercise boundaries, and binomial tree lattices using the CRR model.',
+    keywords: ['CRR binomial tree calculator', 'Cox Ross Rubinstein option pricing', 'American option binomial tree', 'early exercise boundary', 'binomial lattice option'],
+    inputs: ['Spot price S_0', 'Strike K', 'Maturity T', 'Rate r', 'Volatility σ', 'Steps N (e.g. 100)', 'Style (American, European)', 'Type (Call, Put)'],
+    example: { a: ['S_0 = 100, K = 100, T = 1.0', 'r = 0.05, σ = 0.20, N = 100', 'American Put'], result: 'American Put Price = $6.08 (vs European Put $5.57). Early exercise optimal at step 42 if S < 88.5.' },
+    formula: 'u = exp(σ √Δt), d = 1/u, p = (exp(r Δt) - d) / (u - d); V_i,j = max(EarlyExercise, exp(-r Δt) [p V_i+1,j+1 + (1-p) V_i+1,j])',
+    code: {
+      python: `import numpy as np\ndef crr_option(S, K, T, r, sigma, N, option_type='put', american=True):\n    dt = T / N\n    u = np.exp(sigma * np.sqrt(dt))\n    d = 1 / u\n    p = (np.exp(r * dt) - d) / (u - d)\n    ST = [S * (u**j) * (d**(N-j)) for j in range(N+1)]\n    V = [max(0, K - st) if option_type=='put' else max(0, st - K) for st in ST]\n    for i in range(N-1, -1, -1):\n        for j in range(i+1):\n            V[j] = exp(-r*dt) * (p * V[j+1] + (1-p) * V[j])\n            if american:\n                st = S * (u**j) * (d**(i-j))\n                V[j] = max(V[j], K - st if option_type=='put' else st - K)\n    return V[0]`,
+      r: `library(fOptions)\nCRRBinomialTreeOption(TypeFlag="pa", S=100, X=100, Time=1, r=0.05, b=0.05, sigma=0.20, n=100)`,
+      ts: `import { crrBinomialTree } from '@statlab/core';\nconst price = crrBinomialTree({ S0: 100, K: 100, T: 1.0, r: 0.05, sigma: 0.20, N: 100, american: true });`,
+    },
+    useCases: [
+      'Pricing American-style options with optimal early exercise decision choices.',
+      'Valuing real options and dynamic decision trees in multi-stage software projects.'
+    ],
+    when: 'Use when pricing options with early exercise features or path-dependent decision nodes.',
+    cautions: [
+      'Convergence oscillates with tree steps N; use odd/even step averaging or high N (≥200).',
+      'Ensures no-arbitrage condition d < exp(r Δt) < u.'
+    ],
+    workbenchId: 'ts_crr_tree',
+  },
+  {
+    slug: 'black-76-futures-option-pricing',
+    title: 'Black-76 futures option pricing calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate European option prices (Call/Put) and Greeks on commodity, bond, or index futures contracts using the Black-76 model.',
+    keywords: ['Black 76 model calculator', 'futures option pricing', 'commodity option pricing', 'Black 76 call put', 'futures option greeks'],
+    inputs: ['Futures price F', 'Strike K', 'Time to maturity T', 'Risk-free rate r', 'Volatility σ', 'Option type (Call, Put)'],
+    example: { a: ['F = 50.0, K = 50.0, T = 0.5', 'r = 0.03, σ = 0.25', 'Call Option'], result: 'Futures Call Price = $3.42, Delta = 0.485, Gamma = 0.044, Vega = 13.88.' },
+    formula: 'd_1 = [ ln(F/K) + (σ²/2)T ] / (σ √T); d_2 = d_1 - σ √T; C = e^{-rT} [ F Φ(d_1) - K Φ(d_2) ]',
+    code: {
+      python: `from scipy.stats import norm\ndef black76(F, K, T, r, sigma, option_type='call'):\n    d1 = (np.log(F/K) + 0.5*sigma**2*T) / (sigma*np.sqrt(T))\n    d2 = d1 - sigma*np.sqrt(T)\n    df = np.exp(-r*T)\n    return df * (F*norm.cdf(d1) - K*norm.cdf(d2)) if option_type=='call' else df * (K*norm.cdf(-d2) - F*norm.cdf(-d1))`,
+      r: `library(fOptions)\nBlack76Option(TypeFlag="c", FT=50, X=50, Time=0.5, r=0.03, sigma=0.25)`,
+      ts: `import { black76FuturesOption } from '@statlab/core';\nconst res = black76FuturesOption({ F: 50, K: 50, T: 0.5, r: 0.03, sigma: 0.25, type: 'call' });`,
+    },
+    useCases: [
+      'Pricing commodity options (oil, gas, agricultural futures) and interest rate futures options.',
+      'Valuing swaptions using terminal swap rate forward distributions.'
+    ],
+    when: 'Use for options where the underlying asset is a futures or forward contract rather than a spot stock.',
+    cautions: [
+      'Futures contracts require no cost of carry drift adjustment in d1 since cost of carry is embedded in F.',
+      'Discount factor e^{-rT} applies to both Call and Put components.'
+    ],
+    workbenchId: 'ts_black76',
+  },
+  {
+    slug: 'garman-kohlhagen-fx-option-pricing',
+    title: 'Garman-Kohlhagen foreign exchange (FX) option calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate European currency option prices (Call/Put) and FX Greeks incorporating domestic (r_d) and foreign (r_f) interest rates.',
+    keywords: ['Garman Kohlhagen calculator', 'FX option pricing', 'currency option calculator', 'foreign exchange option greeks', 'Garman Kohlhagen formula'],
+    inputs: ['Spot exchange rate S', 'Strike rate K', 'Time T', 'Domestic rate r_d', 'Foreign rate r_f', 'Volatility σ', 'Option type'],
+    example: { a: ['S = 1.10 (EUR/USD), K = 1.10', 'T = 0.5, r_d = 0.05, r_f = 0.02', 'σ = 0.10', 'Call'], result: 'FX Call Price = $0.0342 (3.11% of spot), Delta = 0.542, Vega = 0.218.' },
+    formula: 'd_1 = [ ln(S/K) + (r_d - r_f + σ²/2)T ] / (σ √T); d_2 = d_1 - σ √T; C = S e^{-r_f T} Φ(d_1) - K e^{-r_d T} Φ(d_2)',
+    code: {
+      python: `from scipy.stats import norm\ndef garman_kohlhagen(S, K, T, rd, rf, sigma, option_type='call'):\n    d1 = (np.log(S/K) + (rd - rf + 0.5*sigma**2)*T) / (sigma*np.sqrt(T))\n    d2 = d1 - sigma*np.sqrt(T)\n    if option_type == 'call':\n        return S * np.exp(-rf*T) * norm.cdf(d1) - K * np.exp(-rd*T) * norm.cdf(d2)\n    else:\n        return K * np.exp(-rd*T) * norm.cdf(-d2) - S * np.exp(-rf*T) * norm.cdf(-d1)`,
+      r: `library(fOptions)\nGKMotion(TypeFlag="c", S=1.10, X=1.10, Time=0.5, r=0.05, rf=0.02, sigma=0.10)`,
+      ts: `import { garmanKohlhagen } from '@statlab/core';\nconst res = garmanKohlhagen({ S: 1.10, K: 1.10, T: 0.5, rd: 0.05, rf: 0.02, sigma: 0.10, type: 'call' });`,
+    },
+    useCases: [
+      'Pricing currency options and hedging cross-border foreign exchange rate risk.',
+      'Valuing multi-currency cloud infrastructure expenditure hedges.'
+    ],
+    when: 'Use when pricing options on foreign currencies where both domestic and foreign risk-free rates apply.',
+    cautions: [
+      'Foreign interest rate r_f acts as a continuous dividend yield.',
+      'Ensure spot S and strike K use identical currency quotation conventions.'
+    ],
+    workbenchId: 'ts_garman_kohlhagen',
+  },
+  {
+    slug: 'parkinson-volatility-high-low',
+    title: 'Parkinson High-Low extreme volatility estimator calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate Parkinson volatility using high and low prices to achieve 5x greater sample efficiency than close-to-close volatility estimators.',
+    keywords: ['Parkinson volatility calculator', 'high low volatility estimator', 'extreme price volatility', 'Parkinson range volatility', 'efficient volatility estimation'],
+    inputs: ['High price series H_t', 'Low price series L_t', 'Periods count N'],
+    example: { a: ['High/Low price pairs N = 30 days'], result: 'Parkinson Daily Volatility σ_P = 1.24% (Annualized = 19.7%). Efficiency factor = 5.2x vs close-to-close.' },
+    formula: 'σ_P = √[ 1 / (4 N ln 2) ∑_{t=1}^N (ln(H_t / L_t))² ]',
+    code: {
+      python: `import numpy as np\ndef parkinson_volatility(highs, lows):\n    n = len(highs)\n    return np.sqrt((1.0 / (4.0 * n * np.log(2.0))) * np.sum(np.log(highs / lows)**2))`,
+      r: `library(TTR)\nvol <- volatility(OHLC_df, calc="parkinson")\nprint(tail(vol))`,
+      ts: `import { parkinsonVolatility } from '@statlab/core';\nconst vol = parkinsonVolatility(highPrices, lowPrices);`,
+    },
+    useCases: [
+      'Estimating asset volatility efficiently when intraday high and low prices are logged but full tick data is absent.',
+      'Measuring peak-to-trough operational metric variance in high-frequency server monitoring.'
+    ],
+    when: 'Use when high and low price ranges are available, offering higher statistical efficiency than close-to-close prices.',
+    cautions: [
+      'Assumes continuous trading without overnight price jumps.',
+      'Underestimates volatility if significant opening price gaps occur.'
+    ],
+    workbenchId: 'ts_parkinson_vol',
+  },
+  {
+    slug: 'garman-klass-ohlc-volatility',
+    title: 'Garman-Klass OHLC extreme range volatility calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate Garman-Klass volatility combining Open, High, Low, and Close prices for 8x efficiency over standard close-to-close estimators.',
+    keywords: ['Garman Klass volatility calculator', 'OHLC volatility estimator', 'Garman Klass formula', 'intraday range volatility', 'efficient OHLC volatility'],
+    inputs: ['Open O_t', 'High H_t', 'Low L_t', 'Close C_t', 'Periods N'],
+    example: { a: ['OHLC dataset N = 30 days'], result: 'Garman-Klass Daily Volatility σ_GK = 1.18% (Annualized = 18.7%). Efficiency factor = 7.4x vs close-to-close.' },
+    formula: 'σ_GK = √[ 1/N ∑ ( 0.5 (ln(H_t/L_t))² - (2 ln 2 - 1)(ln(C_t/O_t))² ) ]',
+    code: {
+      python: `import numpy as np\ndef garman_klass_volatility(open, high, low, close):\n    n = len(open)\n    term1 = 0.5 * (np.log(high / low))**2\n    term2 = (2 * np.log(2) - 1) * (np.log(close / open))**2\n    return np.sqrt((1.0 / n) * np.sum(term1 - term2))`,
+      r: `library(TTR)\nvol <- volatility(OHLC_df, calc="garman.klass")\nprint(tail(vol))`,
+      ts: `import { garmanKlassVolatility } from '@statlab/core';\nconst vol = garmanKlassVolatility(opens, highs, lows, closes);`,
+    },
+    useCases: [
+      'Estimating precise historical volatility from daily OHLC bar charts.',
+      'Monitoring intraday operational variability in high-frequency cloud service telemetry.'
+    ],
+    when: 'Use when full Open, High, Low, Close prices are logged for each sampling window.',
+    cautions: [
+      'Does not account for overnight price gaps between previous Close and current Open (use Yang-Zhang extension for overnight gaps).',
+      'Assumes zero drift continuous price path.'
+    ],
+    workbenchId: 'ts_garman_klass_vol',
+  },
+  {
+    slug: 'yang-zhang-ohlc-gap-volatility',
+    title: 'Yang-Zhang OHLC gap-adjusted volatility calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate Yang-Zhang volatility combining overnight jump variance and Rogers-Satchell intraday variance for minimum-variance 14x efficiency.',
+    keywords: ['Yang Zhang volatility calculator', 'overnight gap volatility', 'minimum variance OHLC volatility', 'Yang Zhang formula', 'gap adjusted volatility'],
+    inputs: ['Open O_t', 'High H_t', 'Low L_t', 'Close C_t', 'k factor weighting (default 0.34)'],
+    example: { a: ['OHLC dataset with overnight gaps N = 60'], result: 'Yang-Zhang Volatility σ_YZ = 1.35% daily (21.4% annualized). Overnight gap variance ratio = 22%.' },
+    formula: 'σ_YZ² = σ_o² + k σ_c² + (1-k) σ_RS² where σ_o² is overnight open-to-close-prev variance and σ_RS² is Rogers-Satchell variance',
+    code: {
+      python: `import numpy as np\n# Compute Yang-Zhang minimum variance OHLC volatility incorporating overnight gap component`,
+      r: `library(TTR)\nvol <- volatility(OHLC_df, calc="yang.zhang")\nprint(tail(vol))`,
+      ts: `import { yangZhangVolatility } from '@statlab/core';\nconst vol = yangZhangVolatility(opens, highs, lows, closes);`,
+    },
+    useCases: [
+      'Estimating unbiased financial volatility for markets with significant overnight opening price gaps.',
+      'Accurate risk modeling for equity assets that trade in discontinuous market sessions.'
+    ],
+    when: 'Use when data contain both intraday high/low movements and significant overnight opening price gaps.',
+    cautions: [
+      'Optimal k factor k = 0.34 / (1.34 + (N+1)/(N-1)).',
+      'Requires continuous historical OHLC sequence without missing days.'
+    ],
+    workbenchId: 'ts_yang_zhang_vol',
+  },
+  {
+    slug: 'rogers-satchell-drift-independent-volatility',
+    title: 'Rogers-Satchell drift-independent volatility calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate Rogers-Satchell volatility estimator invariant to non-zero trend drift in price return series.',
+    keywords: ['Rogers Satchell volatility calculator', 'drift independent volatility', 'trend robust volatility', 'Rogers Satchell formula', 'OHLC drift volatility'],
+    inputs: ['Open O_t', 'High H_t', 'Low L_t', 'Close C_t', 'Periods N'],
+    example: { a: ['Trending OHLC series (Drift μ = +0.5%/day)', 'N = 30'], result: 'Rogers-Satchell Volatility σ_RS = 1.12% daily. Unbiased by strong underlying trend drift.' },
+    formula: 'σ_RS = √[ 1/N ∑ ( ln(H_t/C_t) ln(H_t/O_t) + ln(L_t/C_t) ln(L_t/O_t) ) ]',
+    code: {
+      python: `import numpy as np\ndef rogers_satchell_volatility(open, high, low, close):\n    n = len(open)\n    term = np.log(high/close)*np.log(high/open) + np.log(low/close)*np.log(low/open)\n    return np.sqrt((1.0 / n) * np.sum(term))`,
+      r: `library(TTR)\nvol <- volatility(OHLC_df, calc="rogers.satchell")\nprint(tail(vol))`,
+      ts: `import { rogersSatchellVolatility } from '@statlab/core';\nconst vol = rogersSatchellVolatility(opens, highs, lows, closes);`,
+    },
+    useCases: [
+      'Estimating true price volatility during strong trending markets without drift-induced variance inflation.',
+      'Measuring system latency volatility during rapid workload expansion trends.'
+    ],
+    when: 'Use when the underlying series exhibits a strong non-zero mean trend drift.',
+    cautions: [
+      'Does not capture overnight opening gaps (combine with Yang-Zhang if gaps exist).',
+      'Requires non-zero high-low range.'
+    ],
+    workbenchId: 'ts_rogers_satchell_vol',
+  },
+  {
+    slug: 'hodrick-prescott-filter-hp-trend',
+    title: 'Hodrick-Prescott (HP) Filter trend-cycle decomposition calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Decompose a macroeconomic or operational time series y_t into a smooth trend component g_t and cyclical component c_t using smoothing penalty λ.',
+    keywords: ['HP filter calculator', 'Hodrick Prescott filter', 'trend cycle decomposition', 'HP smoothing parameter lambda', 'business cycle extraction'],
+    inputs: ['Time series y_t', 'Smoothing parameter λ (e.g. 1600 for quarterly, 14400 for monthly, 100 for annual)'],
+    example: { a: ['Quarterly series N = 100', 'λ = 1600'], result: 'Decomposed series: Trend g_t (smooth curve) + Cycle c_t (cyclical deviation). Cycle std dev = 1.42%.' },
+    formula: 'Min_{g} [ ∑_{t=1}^T (y_t - g_t)² + λ ∑_{t=2}^{T-1} ((g_{t+1} - g_t) - (g_t - g_{t-1}))² ]',
+    code: {
+      python: `import statsmodels.api as sm\ncycle, trend = sm.tsa.filters.hpfilter(y, lamb=1600)\nprint(trend[:5], cycle[:5])`,
+      r: `library(mFilter)\nhp_res <- hpfilter(y, freq=1600, type="lambda")\nplot(hp_res)`,
+      ts: `import { hpFilter } from '@statlab/core';\nconst { trend, cycle } = hpFilter(series, { lambda: 1600 });`,
+    },
+    useCases: [
+      'Extracting underlying secular growth trends from cyclical business or network traffic metrics.',
+      'Decomposing macroeconomic indicators into long-term trend and business cycle components.'
+    ],
+    when: 'Use to separate a smooth long-term trend from stationary cyclical fluctuations.',
+    cautions: [
+      'Exhibits end-of-sample (tail) distortion bias near the start and end of the time series.',
+      'Standard λ values: 100 (annual), 1600 (quarterly), 14400 (monthly).'
+    ],
+    workbenchId: 'ts_hp_filter',
+  },
+  {
+    slug: 'christiano-fitzgerald-bandpass-filter',
+    title: 'Christiano-Fitzgerald (CF) random walk bandpass filter calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Isolate cyclical components within specific frequency band periods [p_lower, p_upper] using the asymmetric Christiano-Fitzgerald bandpass filter.',
+    keywords: ['Christiano Fitzgerald filter calculator', 'CF bandpass filter', 'time series bandpass filter', 'cyclical frequency extraction', 'random walk bandpass'],
+    inputs: ['Time series y_t', 'Lower period p_lower (e.g. 6)', 'Upper period p_upper (e.g. 32)', 'Drift adjustment'],
+    example: { a: ['Monthly series N = 240', 'p_lower = 18 (1.5 yrs)', 'p_upper = 96 (8 yrs)'], result: 'Extracted business cycle component (1.5 to 8 yr frequency band). Cycle amplitude peak = +3.12%.' },
+    formula: 'c_t = B_0 y_t + B_1 y_{t+1} + ... + B̃_{T-t} y_T + B_1 y_{t-1} + ... + B̃_{t-1} y_1 where B_j weights approximate ideal bandpass',
+    code: {
+      python: `import statsmodels.api as sm\ncycle, trend = sm.tsa.filters.cffilter(y, low=6, high=32, drift=True)\nprint(cycle[:5])`,
+      r: `library(mFilter)\ncf_res <- cffilter(y, pl=6, pu=32, drift=TRUE)\nplot(cf_res)`,
+      ts: `import { cfBandpassFilter } from '@statlab/core';\nconst { cycle } = cfBandpassFilter(series, { pLower: 6, pUpper: 32 });`,
+    },
+    useCases: [
+      'Isolating specific seasonal or business cycle periodicities without phase shift lag.',
+      'Filtering out high-frequency noise and low-frequency trend to isolate medium-term operational cycles.'
+    ],
+    when: 'Use when seeking an optimal asymmetric bandpass filter designed for non-stationary random walk time series.',
+    cautions: [
+      'Asymmetric filter weights update for each time index t to utilize full sample length T.',
+      'Requires specifying realistic lower and upper periodicity bounds.'
+    ],
+    workbenchId: 'ts_cf_filter',
+  },
+  {
+    slug: 'bk-bandpass-filter-baxter-king',
+    title: 'Baxter-King (BK) symmetric bandpass filter calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Extract periodic cycle components within band [p_lower, p_upper] using a symmetric moving average approximation to the ideal bandpass filter.',
+    keywords: ['Baxter King filter calculator', 'BK bandpass filter', 'symmetric bandpass filter', 'business cycle BK filter', 'ideal bandpass approximation'],
+    inputs: ['Time series y_t', 'Lower period p_lower (e.g. 6)', 'Upper period p_upper (e.g. 32)', 'Cutoff lag K (e.g. 12)'],
+    example: { a: ['Quarterly series N = 160', 'p_lower = 6, p_upper = 32', 'K = 12 lags'], result: 'Symmetric filtered series generated (loses K = 12 observations at both ends). Zero phase shift guaranteed.' },
+    formula: 'c_t = ∑_{k=-K}^K a_k y_{t-k} subject to ∑ a_k = 0 (zero gain at frequency 0)',
+    code: {
+      python: `import statsmodels.api as sm\ncycle = sm.tsa.filters.bkfilter(y, low=6, high=32, K=12)\nprint(cycle[:15])`,
+      r: `library(mFilter)\nbk_res <- bkfilter(y, pl=6, pu=32, nfix=12)\nplot(bk_res)`,
+      ts: `import { bkBandpassFilter } from '@statlab/core';\nconst cycle = bkBandpassFilter(series, { pLower: 6, pUpper: 32, K: 12 });`,
+    },
+    useCases: [
+      'Extracting clean business cycle components with strict symmetric zero phase distortion.',
+      'Removing high-frequency noise and low-frequency trend in stationary or trend-stationary series.'
+    ],
+    when: 'Use when exact symmetric zero-phase properties are required and losing K endpoint observations is acceptable.',
+    cautions: [
+      'Loses K observations at both the start and end of the time series sample.',
+      'Standard lag length K = 12 for quarterly data (K = 36 for monthly).'
+    ],
+    workbenchId: 'ts_bk_filter',
+  },
+  {
+    slug: 'beveridge-nelson-decomposition-bn',
+    title: 'Beveridge-Nelson (BN) trend-cycle decomposition calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Decompose a non-stationary I(1) time series into a stochastic random walk trend with drift and stationary cycle component using ARMA dynamics.',
+    keywords: ['Beveridge Nelson filter calculator', 'BN decomposition calculator', 'stochastic trend cycle', 'BN filter ARMA', 'random walk trend extraction'],
+    inputs: ['Time series y_t', 'AR lag order p', 'MA lag order q'],
+    example: { a: ['N = 200 quarterly GDP observations', 'AR(1) on differencing Δy_t'], result: 'Stochastic trend g_t (Random Walk with drift = +0.75%/qtr). Cycle c_t std dev = 1.15%.' },
+    formula: 'g_t = y_t + lim_{k→∞} E_t [ ∑_{j=1}^k Δy_{t+j} - k μ ] = y_t + ψ(1) ∑_{j=1}^∞ ε_{t+j}',
+    code: {
+      python: `import statsmodels.api as sm\n# Compute Beveridge-Nelson decomposition from fitted ARIMA(p,1,q) forecast horizons`,
+      r: `library(bnfilter)\nbn_res <- bnf(y, p=1, q=0, type="drc")\nplot(bn_res)`,
+      ts: `import { beveridgeNelsonDecomposition } from '@statlab/core';\nconst { trend, cycle } = beveridgeNelsonDecomposition(series, { p: 1 });`,
+    },
+    useCases: [
+      'Decomposing non-stationary economic or operational metrics where the trend itself is stochastic rather than smooth.',
+      'Estimating permanent vs transitory shock impacts in time series econometrics.'
+    ],
+    when: 'Use when the trend component is assumed to be a pure stochastic random walk rather than a smooth curve.',
+    cautions: [
+      'BN trend and cycle components are 100% perfectly negatively correlated by construction in the standard formulation.',
+      'Requires accurate identification of ARMA lag orders for Δy_t.'
+    ],
+    workbenchId: 'ts_bn_decomposition',
+  },
+  {
+    slug: 'kalman-filter-state-space-estimator',
+    title: 'Kalman Filter linear state-space optimal estimator calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate recursive state estimates x̂_{t|t}, error covariances P_{t|t}, Kalman gain matrices K_t, and Rauch-Tung-Striebel (RTS) smoothed states.',
+    keywords: ['Kalman filter calculator', 'state space model estimator', 'Kalman gain matrix', 'RTS smoother calculator', 'recursive state estimation'],
+    inputs: ['Measurement series z_t', 'State transition matrix F', 'Observation matrix H', 'Process noise covariance Q', 'Measurement noise covariance R'],
+    example: { a: ['Measurements N = 100', 'Process noise Q = 0.01', 'Measurement noise R = 1.0'], result: 'Steady-state Kalman Gain K = 0.095. Noise reduction ratio = 82%. RTS Smoothed path rendered.' },
+    formula: 'x̂_{t|t-1} = F x̂_{t-1|t-1}; P_{t|t-1} = F P_{t-1|t-1} Fᵀ + Q; K_t = P_{t|t-1} Hᵀ (H P_{t|t-1} Hᵀ + R)⁻¹; x̂_{t|t} = x̂_{t|t-1} + K_t (z_t - H x̂_{t|t-1})',
+    code: {
+      python: `from pykalman import KalmanFilter\nkf = KalmanFilter(transition_matrices=1.0, observation_matrices=1.0, initial_state_mean=0, initial_state_covariance=1, transition_covariance=0.01, observation_covariance=1.0)\nstate_means, state_covs = kf.filter(measurements)\nsmoothed_means, smoothed_covs = kf.smooth(measurements)`,
+      r: `library(dlm)\n# Define DLM state space model and run dlmFilter and dlmSmooth`,
+      ts: `import { kalmanFilter } from '@statlab/core';\nconst res = kalmanFilter(measurements, { F: [[1]], H: [[1]], Q: [[0.01]], R: [[1.0]] });`,
+    },
+    useCases: [
+      'Tracking true latent system states from noisy real-time telemetry sensor streams.',
+      'Estimating dynamic time-varying beta coefficients and pair-trading hedge ratios.'
+    ],
+    when: 'Use for real-time optimal recursive state estimation in linear dynamic systems with Gaussian noise.',
+    cautions: [
+      'Requires accurate initialization of process noise Q and measurement noise R covariances.',
+      'For non-linear systems, use the Extended Kalman Filter (EKF) or Unscented Kalman Filter (UKF).'
+    ],
+    workbenchId: 'ts_kalman_filter',
+  },
+  {
+    slug: 'extended-kalman-filter-ekf-nonlinear',
+    title: 'Extended Kalman Filter (EKF) non-linear state estimator calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate state estimates for non-linear dynamic systems x_t = f(x_{t-1}) + w_t using Jacobian matrices F_J and H_J first-order Taylor expansions.',
+    keywords: ['EKF calculator', 'Extended Kalman Filter', 'nonlinear state estimation', 'Jacobian Kalman filter', 'non linear system tracking'],
+    inputs: ['Non-linear transition function f(x)', 'Non-linear observation function h(x)', 'Jacobian functions F_J, H_J', 'Noise covariances Q, R'],
+    example: { a: ['Non-linear trajectory N = 150', 'f(x) = sin(x) + x'], result: 'EKF state convergence achieved. Average RMSE = 0.142 (Jacobian linearization error < 0.5%).' },
+    formula: 'F_J = ∂f/∂x |_{x̂_{t-1|t-1}}; H_J = ∂h/∂x |_{x̂_{t|t-1}}; P_{t|t-1} = F_J P_{t-1|t-1} F_Jᵀ + Q',
+    code: {
+      python: `from filterpy.kalman import ExtendedKalmanFilter\n# Initialize EKF with non-linear state transition and observation functions and Jacobians`,
+      r: `library(ekf)\n# Execute Extended Kalman Filter recursion with analytical Jacobians`,
+      ts: `import { extendedKalmanFilter } from '@statlab/core';\nconst res = extendedKalmanFilter(measurements, { f, h, FJ, HJ, Q, R });`,
+    },
+    useCases: [
+      'Tracking non-linear physical system trajectories (e.g. robotics, navigation, power grid frequency).',
+      'Estimating non-linear parameter drift in complex financial SDE models.'
+    ],
+    when: 'Use when system state transitions or observation functions are non-linear but differentiable.',
+    cautions: [
+      'Jacobian linearization can diverge if non-linearities are extreme or initial state errors are large.',
+      'UKF (Unscented Kalman Filter) avoids calculating explicit Jacobians.'
+    ],
+    workbenchId: 'ts_ekf',
+  },
+  {
+    slug: 'unscented-kalman-filter-ukf-sigma-points',
+    title: 'Unscented Kalman Filter (UKF) sigma-point estimator calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate Unscented Transform 2L+1 sigma points χ_i, weights w_i^{(m)}, w_i^{(c)}, and state updates without computing explicit Jacobians.',
+    keywords: ['UKF calculator', 'Unscented Kalman Filter', 'sigma points transformation', 'Unscented transform calculator', 'derivative free Kalman filter'],
+    inputs: ['State dimension L', 'Scaling parameters α, β, κ', 'Transition f(x)', 'Observation h(x)', 'Covariances Q, R'],
+    example: { a: ['State dimension L = 3', 'α = 1e-3, β = 2.0, κ = 0', 'Sigma points count = 7'], result: 'Unscented transform captures 3rd-order Taylor terms. RMSE = 0.081 (Superior accuracy over EKF).' },
+    formula: 'χ_0 = x̂; χ_i = x̂ + (√( (L+λ) P ))_i; χ_{i+L} = x̂ - (√( (L+λ) P ))_i; λ = α²(L+κ) - L',
+    code: {
+      python: `from filterpy.kalman import UnscentedKalmanFilter, MerweScaledSigmaPoints\nsigmas = MerweScaledSigmaPoints(n=3, alpha=0.1, beta=2.0, kappa=0)\nukf = UnscentedKalmanFilter(dim_x=3, dim_z=1, fx=f_func, hx=h_func, points=sigmas)`,
+      r: `library(ukf)\n# Execute Unscented Kalman Filter using deterministic sigma point sampling`,
+      ts: `import { unscentedKalmanFilter } from '@statlab/core';\nconst res = unscentedKalmanFilter(measurements, { f, h, L: 3, Q, R });`,
+    },
+    useCases: [
+      'State estimation for highly non-linear or non-differentiable system models.',
+      'Tracking complex target trajectories where analytical Jacobian evaluation is intractable.'
+    ],
+    when: 'Use for non-linear state estimation when Jacobians are hard to derive or when 2nd/3rd order accuracy is needed.',
+    cautions: [
+      'Requires evaluating transition function f(x) and observation function h(x) on 2L+1 sigma points at each step.',
+      'Parameter β = 2.0 is optimal for Gaussian distributions.'
+    ],
+    workbenchId: 'ts_ukf',
+  },
+  {
+    slug: 'particle-filter-sequential-monte-carlo-smc',
+    title: 'Particle Filter (Sequential Monte Carlo - SMC) importance resampling calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate non-Gaussian state posterior distributions P(x_t|z_{1:t}) using N_p weighted particles, importance sampling, and Systematic/Stratified Resampling.',
+    keywords: ['Particle Filter calculator', 'Sequential Monte Carlo SMC', 'importance resampling particle', 'non Gaussian state filter', 'effective sample size ESS'],
+    inputs: ['Measurements z_{1:T}', 'Particles count N_p (e.g. 1000)', 'Resampling threshold ESS_min', 'Proposal density q(x_t|x_{t-1}, z_t)'],
+    example: { a: ['Particles N_p = 1000', 'Non-Gaussian bimodal noise', 'ESS threshold = 500'], result: 'Systematic resampling triggered at t=14 (ESS = 342 < 500). Posterior bimodal distribution preserved.' },
+    formula: 'w_t^i ∝ w_{t-1}^i [ p(z_t|x_t^i) p(x_t^i|x_{t-1}^i) / q(x_t^i|x_{t-1}^i, z_t) ]; ESS = 1 / ∑ (ŵ_t^i)²',
+    code: {
+      python: `from filterpy.monte_carlo import systematic_resample\nimport numpy as np\n# Run Sequential Importance Resampling (SIR) particle filter recursion`,
+      r: `library(pomp)\n# Construct POMP model object and execute particle filtering (pfilter)`,
+      ts: `import { particleFilter } from '@statlab/core';\nconst res = particleFilter(measurements, { nParticles: 1000, essThreshold: 500 });`,
+    },
+    useCases: [
+      'State estimation in non-Gaussian, multi-modal, or highly non-linear operational environments.',
+      'Tracking financial regime shifts and jump processes with arbitrary noise distributions.'
+    ],
+    when: 'Use when system noise is non-Gaussian or multimodal, rendering Kalman filter family approximations inadequate.',
+    cautions: [
+      'Particle degeneracy (weights concentrating on a single particle) requires effective sample size (ESS) monitoring and resampling.',
+      'Computationally demanding for high-dimensional state vectors (curse of dimensionality).'
+    ],
+    workbenchId: 'ts_particle_filter',
+  },
 ];
 
 const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
