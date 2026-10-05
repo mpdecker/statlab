@@ -418,13 +418,16 @@ describe('SEO calculator pages', () => {
     const root = mkdtempSync(join(tmpdir(), 'statlab-seo-'));
     generateSeoCalculatorPages(root);
     expect(existsSync(join(root, 'calculators', 'index.html'))).toBe(true);
+    expect(existsSync(join(root, 'calculators', 'causal-inference-biostatistics', 'index.html'))).toBe(true);
+    expect(existsSync(join(root, 'calculators', 'hypothesis-testing-anova', 'index.html'))).toBe(true);
     expect(existsSync(join(root, 'calculators', 'welch-t-test', 'index.html'))).toBe(true);
     expect(existsSync(join(root, 'calculators', 'z-score-calculator', 'index.html'))).toBe(true);
     expect(existsSync(join(root, 'calculators', 'pca-variance-explained', 'index.html'))).toBe(true);
     expect(existsSync(join(root, 'calculators', 'granger-causality', 'index.html'))).toBe(true);
 
     const sitemap = readFileSync(join(root, 'sitemap.xml'), 'utf8');
-    expect(sitemap.match(/<loc>/g)).toHaveLength(calculatorPages.length + 2);
+    expect(sitemap.match(/<loc>/g)).toHaveLength(calculatorPages.length + 14);
+    expect(sitemap).toContain('https://statlab.fyi/calculators/causal-inference-biostatistics/');
     expect(sitemap).toContain('https://statlab.fyi/calculators/granger-causality/');
     expect(readFileSync(join(root, 'robots.txt'), 'utf8')).toContain('Sitemap: https://statlab.fyi/sitemap.xml');
   });

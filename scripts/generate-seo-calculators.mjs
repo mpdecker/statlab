@@ -9508,11 +9508,102 @@ export const calculatorPages = [
   },
 ];
 
+export const CATEGORIES = [
+  {
+    slug: 'hypothesis-testing-anova',
+    title: 'Hypothesis Testing & ANOVA',
+    description: 't-tests (Welch, Student, paired, one-sample), ANOVA variants (one-way, two-way, repeated measures, ANCOVA, Welch), post-hoc adjustments (Tukey HSD, Dunnett), effect sizes, and power calculations.',
+    families: ['Compare means', 'ANOVA & factorial analysis', 'Power & sample size'],
+  },
+  {
+    slug: 'causal-inference-biostatistics',
+    title: 'Causal Inference & Biostatistics',
+    description: 'Synthetic Control (AugSynth, GSC, SCM), Staggered DiD (Callaway-Sant\'Anna), Causal Forests (HTE/CATE), RDD (Sharp & Fuzzy), Propensity Score Matching (PSM, IPW), and epidemiology risk metrics.',
+    families: ['Biostatistics, causal inference & risk metrics'],
+  },
+  {
+    slug: 'time-series-econometrics',
+    title: 'Time Series, Econometrics & Volatility',
+    description: 'Stationarity (ADF, KPSS), cointegration (Johansen, EG, ARDL), VAR/VECM, GARCH volatility models (EGARCH, GJR, DCC, FIGARCH), short rate interest models, and bandpass/Kalman filters.',
+    families: ['Time series, volatility & econometrics', 'Structural break & non-linear tests', 'Forecast comparison tests'],
+  },
+  {
+    slug: 'machine-learning-ai-evaluation',
+    title: 'AI/ML Evaluation & Decisioning',
+    description: 'Confusion matrix, ROC-AUC, inter-annotator agreement (Cohen & Fleiss Kappa, ICC), multi-armed bandits (Thompson Sampling, UCB1), conformal prediction (CQR, Venn-Abers), SHAP attributions, and cluster validity indices.',
+    families: ['AI / ML evaluation & mixture models', 'Information theory & machine learning'],
+  },
+  {
+    slug: 'probability-distributions',
+    title: 'Probability & Multivariate Distributions',
+    description: 'Univariate continuous distributions (Log-normal, Weibull, Beta, Gamma, Cauchy, Skew-t), multivariate (Multivariate t, Matrix-Normal), extreme value (GEV, Pareto, POT), and PCA variance explained.',
+    families: ['Probability distributions & dimensionality reduction', 'Extreme value & heavy-tailed distributions', 'Continuous probability distributions'],
+  },
+  {
+    slug: 'survival-reliability-risk',
+    title: 'Survival & Reliability Analysis',
+    description: 'Kaplan-Meier survival curves, Cox proportional hazards regression, Weibull reliability, log-rank tests, competing risks, RMST, MTBF/MTTR uptime, and Value at Risk (VaR/CVaR).',
+    families: ['Survival & event history analysis'],
+  },
+  {
+    slug: 'spatial-statistics-geostatistics',
+    title: 'Spatial Statistics & Geostatistics',
+    description: 'Spatial autocorrelation (Moran I, Geary C, LISA), spatial point patterns (Ripley K, Besag L, Hawkes processes), Kriging spatial interpolation, and spatial regression (SEM, SDM).',
+    families: ['Spatial statistics & geostatistics'],
+  },
+  {
+    slug: 'quality-control-spc',
+    title: 'Quality Control & Statistical Process Control (SPC)',
+    description: 'Cpk process capability, X-bar & R charts, EWMA/CUSUM control limits, p-charts, Six Sigma DPMO, Gage R&R, accelerated life testing, and Mahalanobis-Taguchi systems.',
+    families: ['Statistical process control & quality engineering'],
+  },
+  {
+    slug: 'vector-distances-embeddings',
+    title: 'Embeddings, RAG & Vector Distances',
+    description: 'Cosine similarity for LLM RAG, Wasserstein distance (EMD), Mahalanobis distance, Euclidean/Manhattan/Minkowski p-norms, Bray-Curtis, Gower dissimilarity, and Hopkins clustering tendency.',
+    families: ['Vector distances & embedding metrics'],
+  },
+  {
+    slug: 'resampling-nonparametric',
+    title: 'Resampling & Non-Parametric Tests',
+    description: 'Bootstrap confidence intervals (Percentile, BCa), permutation tests, Mann-Whitney U, Wilcoxon signed-rank, Kruskal-Wallis, Friedman, Dunn post-hoc, K-S test, Theil-Sen & Siegel robust regressions.',
+    families: ['Resampling & robust non-parametric estimation', 'Ordinal & contingency non-parametric tests', 'Equivalence & circular statistics'],
+  },
+  {
+    slug: 'psychometrics-scale-analysis',
+    title: 'Psychometrics & Scale Analysis',
+    description: 'Cronbach Alpha, McDonald Omega, Item Response Theory (1PL Rasch, 2PL, 3PL, GRM), Differential Item Functioning (DIF), CFA fit indices, and conjoint analysis part-worth utility.',
+    families: ['Psychometrics & scale analysis', 'Structural equation modeling (SEM) & factor analysis'],
+  },
+  {
+    slug: 'signal-processing-networks',
+    title: 'Signal Processing, Wavelets & Networks',
+    description: 'Continuous Wavelet Transform (CWT), Cross-Wavelet Coherence, Hilbert Transform, Wavelet Packet Transform (WPT), network graph density/centrality, GNN Dirichlet energy over-smoothing, copulas, GLM/GAM, DOE, and multivariate modeling.',
+    families: [
+      'Signal processing & wavelet analysis',
+      'Network analysis & graph metrics',
+      'Functional data analysis (FDA)',
+      'Copula analysis & joint tail dependence',
+      'Generalized linear & additive models (GLM/GAM)',
+      'Design of experiments (DOE) & optimization',
+      'Meta-analysis & heterogeneity',
+      'Statistical diagnostics & outlier tests',
+      'Advanced regression & multivariate modeling',
+    ],
+  },
+];
+
+export function getCalculatorCategory(page) {
+  const cat = CATEGORIES.find((c) => c.families.includes(page.family));
+  return cat || CATEGORIES[CATEGORIES.length - 1];
+}
+
 const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const calculatorPath = (page) => `/calculators/${page.slug}/`;
 
 export function renderCalculatorPage(page) {
   const url = `${ORIGIN}${calculatorPath(page)}`;
+  const category = getCalculatorCategory(page);
   const schema = [
     {
       '@context': 'https://schema.org',
@@ -9577,14 +9668,19 @@ export function renderCalculatorPage(page) {
   <meta name="twitter:description" content="${esc(page.description)}">
   <script type="application/ld+json">${JSON.stringify(schema).replace(/</g, '\\u003c')}</script>
   <style>
-    :root{color-scheme:dark;--bg:#080b10;--panel:#111722;--panel2:#0d121b;--text:#edf4ff;--muted:#9db0c7;--accent:#5df2b6;--accent2:#38bdf8;--line:#243246;--gold:#ffd166;--code-bg:#071018}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top left,#152033 0,#080b10 42rem);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.55}.wrap{max-width:1120px;margin:0 auto;padding:28px 20px 64px}a{color:var(--accent)}.nav{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:48px}.brand{font-weight:900;letter-spacing:.08em;text-decoration:none;color:var(--text);font-size:20px}.brand span{color:var(--accent)}.hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:28px;align-items:start}.eyebrow{color:var(--accent);font-size:13px;text-transform:uppercase;letter-spacing:.16em;font-weight:800}h1{font-size:clamp(36px,6vw,68px);line-height:.95;margin:12px 0 18px;letter-spacing:-.04em}p.lede{font-size:19px;color:#c9d7e8;max-width:720px;line-height:1.45}.panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 20px 80px rgba(0,0,0,.28)}.button{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:13px 20px;background:var(--accent);color:#06100c;text-decoration:none;font-weight:900;margin:8px 10px 8px 0;transition:transform .15s ease}.button:hover{transform:translateY(-1px)}.button.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:28px}.card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:18px;padding:22px}.card h2,.card h3{margin-top:0;font-size:20px;color:var(--text)}.card.full{grid-column:1 / -1}.card.accent-card{background:linear-gradient(135deg,rgba(93,242,182,.05) 0%,rgba(56,189,248,.05) 100%);border-color:rgba(93,242,182,.25)}.muted{color:var(--muted)}code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}pre{background:var(--code-bg);border:1px solid #1b2a3d;border-radius:14px;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.45;color:#e2e8f0}.example{background:var(--code-bg);border:1px solid #1b2a3d;border-radius:16px;padding:16px;margin-top:14px}.list{padding-left:20px;margin:10px 0}.list li{margin-bottom:6px}.cta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:12px}.cta-box{background:rgba(17,23,34,.9);border:1px solid var(--line);border-radius:14px;padding:16px}.cta-box h4{margin:0 0 6px;color:var(--accent);font-size:16px}.cta-box.assurance h4{color:var(--accent2)}.footer{border-top:1px solid var(--line);margin-top:48px;padding-top:24px;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}@media(max-width:860px){.hero,.grid,.cta-grid{grid-template-columns:1fr}.nav{align-items:flex-start;flex-direction:column}h1{font-size:40px}}
+    :root{color-scheme:dark;--bg:#080b10;--panel:#111722;--panel2:#0d121b;--text:#edf4ff;--muted:#9db0c7;--accent:#5df2b6;--accent2:#38bdf8;--line:#243246;--gold:#ffd166;--code-bg:#071018}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top left,#152033 0,#080b10 42rem);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.55}.wrap{max-width:1120px;margin:0 auto;padding:28px 20px 64px}a{color:var(--accent)}.nav{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:32px}.brand{font-weight:900;letter-spacing:.08em;text-decoration:none;color:var(--text);font-size:20px}.brand span{color:var(--accent)}.hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:28px;align-items:start}.eyebrow{color:var(--accent);font-size:13px;text-transform:uppercase;letter-spacing:.16em;font-weight:800}h1{font-size:clamp(36px,6vw,68px);line-height:.95;margin:12px 0 18px;letter-spacing:-.04em}p.lede{font-size:19px;color:#c9d7e8;max-width:720px;line-height:1.45}.panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 20px 80px rgba(0,0,0,.28)}.button{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:13px 20px;background:var(--accent);color:#06100c;text-decoration:none;font-weight:900;margin:8px 10px 8px 0;transition:transform .15s ease}.button:hover{transform:translateY(-1px)}.button.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:28px}.card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:18px;padding:22px}.card h2,.card h3{margin-top:0;font-size:20px;color:var(--text)}.card.full{grid-column:1 / -1}.card.accent-card{background:linear-gradient(135deg,rgba(93,242,182,.05) 0%,rgba(56,189,248,.05) 100%);border-color:rgba(93,242,182,.25)}.muted{color:var(--muted)}code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}pre{background:var(--code-bg);border:1px solid #1b2a3d;border-radius:14px;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.45;color:#e2e8f0}.example{background:var(--code-bg);border:1px solid #1b2a3d;border-radius:16px;padding:16px;margin-top:14px}.list{padding-left:20px;margin:10px 0}.list li{margin-bottom:6px}.cta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:12px}.cta-box{background:rgba(17,23,34,.9);border:1px solid var(--line);border-radius:14px;padding:16px}.cta-box h4{margin:0 0 6px;color:var(--accent);font-size:16px}.cta-box.assurance h4{color:var(--accent2)}.footer{border-top:1px solid var(--line);margin-top:48px;padding-top:24px;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}@media(max-width:860px){.hero,.grid,.cta-grid{grid-template-columns:1fr}.nav{align-items:flex-start;flex-direction:column}h1{font-size:40px}}
   </style>
 </head>
 <body>
   <main class="wrap">
     <nav class="nav" aria-label="Primary">
       <a class="brand" href="/">STAT<span>LAB</span></a>
-      <div><a href="/calculators/">Calculators</a> · <a href="/?launch=1#workbench">Open workbench</a> · <a href="https://www.npmjs.com/package/@statlab/core">@statlab/core</a></div>
+      <div>
+        <a href="/calculators/">Calculators</a> · 
+        <a href="/calculators/${category.slug}/">${esc(category.title)}</a> · 
+        <a href="/?launch=1#workbench">Open workbench</a> · 
+        <a href="https://www.npmjs.com/package/@statlab/core">@statlab/core</a>
+      </div>
     </nav>
     <section class="hero">
       <div>
@@ -9678,8 +9774,165 @@ export function renderCalculatorPage(page) {
 </html>`;
 }
 
+export function renderCategoryPage(category, catPages) {
+  const cards = catPages.map((page) => `
+    <a class="card" href="${calculatorPath(page)}">
+      <span class="eyebrow">${esc(page.family)}</span>
+      <h2 style="margin:6px 0 8px;font-size:18px">${esc(page.title)}</h2>
+      <p style="font-size:14px;color:#9db0c7;margin:0 0 12px">${esc(page.description)}</p>
+      <span style="font-weight:700;font-size:13px;color:#5df2b6">Open Calculator →</span>
+    </a>`).join('');
+
+  const otherCats = CATEGORIES.filter((c) => c.slug !== category.slug).map((c) => `
+    <a style="background:rgba(255,255,255,0.03);border:1px solid #243246;color:#edf4ff;border-radius:8px;padding:8px 14px;font-size:13px;text-decoration:none;font-weight:600" href="/calculators/${c.slug}/">${esc(c.title)} →</a>`).join('');
+
+  const catDataJson = JSON.stringify(catPages.map((p) => ({
+    slug: p.slug,
+    title: p.title,
+    description: p.description,
+    family: p.family,
+    keywords: (p.keywords || []).join(' '),
+  })));
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${esc(category.title)} Calculators | StatLab</title>
+  <meta name="description" content="Explore ${catPages.length} static, shareable ${esc(category.title)} calculators: ${esc(category.description)}">
+  <link rel="canonical" href="${ORIGIN}/calculators/${category.slug}/">
+  <meta property="og:title" content="${esc(category.title)} Calculators | StatLab">
+  <meta property="og:description" content="Explore ${catPages.length} static, shareable ${esc(category.title)} calculators: ${esc(category.description)}">
+  <meta property="og:url" content="${ORIGIN}/calculators/${category.slug}/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="StatLab">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="${esc(category.title)} Calculators | StatLab">
+  <meta name="twitter:description" content="Explore ${catPages.length} static, shareable ${esc(category.title)} calculators: ${esc(category.description)}">
+  <style>
+    body{margin:0;background:#080b10;color:#edf4ff;font-family:Inter,ui-sans-serif,system-ui,sans-serif;line-height:1.5}.wrap{max-width:1120px;margin:auto;padding:40px 20px}a{color:#5df2b6}.brand{font-weight:900;letter-spacing:.08em;text-decoration:none;color:#edf4ff;font-size:20px}.brand span{color:#5df2b6}.crumbs{font-size:13px;color:#9db0c7;margin-bottom:16px}.crumbs a{color:#9db0c7;text-decoration:none}.crumbs a:hover{color:#5df2b6}h1{font-size:clamp(32px,5vw,56px);line-height:1.05;margin:8px 0 12px;letter-spacing:-.03em}.eyebrow{color:#5df2b6;font-size:12px;text-transform:uppercase;letter-spacing:.14em;font-weight:800}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:24px}.card{display:block;text-decoration:none;color:#edf4ff;background:#111722;border:1px solid #243246;border-radius:18px;padding:20px;transition:border-color .15s ease}.card:hover{border-color:#5df2b6}.banner{background:linear-gradient(135deg,#111722 0%,#0d1420 100%);border:1px solid #243246;border-radius:20px;padding:24px;margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:760px){.grid,.banner{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <a class="brand" href="/">STAT<span>LAB</span></a>
+    <div class="crumbs" style="margin-top:16px">
+      <a href="/">StatLab</a> / <a href="/calculators/">Calculators</a> / <span>${esc(category.title)}</span>
+    </div>
+    <div class="eyebrow">${catPages.length} Calculators</div>
+    <h1>${esc(category.title)}</h1>
+    <p style="font-size:18px;color:#9db0c7;max-width:780px">${esc(category.description)}</p>
+
+    <div style="margin:24px 0 28px">
+      <div style="position:relative;max-width:760px">
+        <input type="text" id="cat-search" placeholder="🔍  Filter ${catPages.length} ${esc(category.title)} calculators..." style="width:100%;background:#111722;border:1px solid #243246;border-radius:12px;padding:14px 18px;font-size:15px;color:#edf4ff;box-sizing:border-box;outline:none">
+        <span id="cat-count" style="position:absolute;right:16px;top:15px;font-size:13px;color:#5df2b6;font-weight:700"></span>
+      </div>
+    </div>
+
+    <section id="cat-grid" class="grid">
+      ${cards}
+    </section>
+
+    <section style="margin-top:48px;border-top:1px solid #243246;padding-top:24px">
+      <h3 style="margin:0 0 16px;font-size:18px;color:#fff">Explore Other Calculator Categories</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        ${otherCats}
+      </div>
+    </section>
+
+    <section class="banner">
+      <div>
+        <h3 style="margin:0 0 8px;color:#5df2b6">StatLab Interactive Workbench</h3>
+        <p style="margin:0;font-size:14px;color:#9db0c7">Run live statistical tests, import CSV data, and export publication-ready APA results directly in your browser.</p>
+      </div>
+      <div>
+        <h3 style="margin:0 0 8px;color:#38bdf8">@statlab/core TypeScript Library</h3>
+        <p style="margin:0;font-size:14px;color:#9db0c7">Zero-dependency, high-performance TypeScript statistics and probability engine for web apps, APIs, and microservices.</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function() {
+      const catData = ${catDataJson};
+      const input = document.getElementById('cat-search');
+      const grid = document.getElementById('cat-grid');
+      const count = document.getElementById('cat-count');
+
+      input.addEventListener('input', function(e) {
+        const q = e.target.value.trim().toLowerCase();
+        if (!q) {
+          count.textContent = '';
+          grid.innerHTML = catData.map(function(c) {
+            return '<a class="card" href="/calculators/' + c.slug + '/">' +
+              '<span class="eyebrow">' + c.family + '</span>' +
+              '<h2 style="margin:6px 0 8px;font-size:18px">' + c.title + '</h2>' +
+              '<p style="font-size:14px;color:#9db0c7;margin:0 0 12px">' + c.description + '</p>' +
+              '<span style="font-weight:700;font-size:13px;color:#5df2b6">Open Calculator →</span>' +
+            '</a>';
+          }).join('');
+          return;
+        }
+        const matches = catData.filter(function(c) {
+          return c.title.toLowerCase().indexOf(q) !== -1 ||
+                 c.description.toLowerCase().indexOf(q) !== -1 ||
+                 c.keywords.toLowerCase().indexOf(q) !== -1 ||
+                 c.family.toLowerCase().indexOf(q) !== -1;
+        });
+        count.textContent = matches.length + ' matching';
+        if (matches.length === 0) {
+          grid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:#9db0c7">No calculators match "' + q.replace(/[&<>"']/g, '') + '" in this category.</div>';
+        } else {
+          grid.innerHTML = matches.map(function(c) {
+            return '<a class="card" href="/calculators/' + c.slug + '/">' +
+              '<span class="eyebrow">' + c.family + '</span>' +
+              '<h2 style="margin:6px 0 8px;font-size:18px">' + c.title + '</h2>' +
+              '<p style="font-size:14px;color:#9db0c7;margin:0 0 12px">' + c.description + '</p>' +
+              '<span style="font-weight:700;font-size:13px;color:#5df2b6">Open Calculator →</span>' +
+            '</a>';
+          }).join('');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>`;
+}
+
 export function renderCalculatorIndex() {
-  const cards = calculatorPages.map((page) => `<a class="card" href="${calculatorPath(page)}"><span class="eyebrow">${esc(page.family)}</span><h2 style="margin:6px 0 8px;font-size:18px">${esc(page.title)}</h2><p style="font-size:14px;color:#9db0c7;margin:0 0 12px">${esc(page.description)}</p><span style="font-weight:700;font-size:13px;color:#5df2b6">Open Calculator →</span></a>`).join('');
+  const categoryCards = CATEGORIES.map((cat) => {
+    const catPages = calculatorPages.filter((p) => getCalculatorCategory(p).slug === cat.slug);
+    const topPills = catPages.slice(0, 3).map((p) => `<a style="background:rgba(93,242,182,0.08);border:1px solid rgba(93,242,182,0.25);color:#5df2b6;font-size:12px;padding:3px 8px;border-radius:4px;text-decoration:none;font-weight:600" href="${calculatorPath(p)}">${esc(p.title)}</a>`).join('');
+    return `
+    <div class="card cat-card" style="display:flex;flex-direction:column;justify-space-between">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="eyebrow">${catPages.length} Calculators</span>
+          <a style="font-weight:700;font-size:13px;color:#5df2b6;text-decoration:none" href="/calculators/${cat.slug}/">Explore Hub →</a>
+        </div>
+        <h2 style="margin:4px 0 8px;font-size:20px"><a style="color:#edf4ff;text-decoration:none" href="/calculators/${cat.slug}/">${esc(cat.title)}</a></h2>
+        <p style="font-size:14px;color:#9db0c7;margin:0 0 14px;line-height:1.45">${esc(cat.description)}</p>
+      </div>
+      <div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+          ${topPills}
+        </div>
+        <a class="cat-btn" href="/calculators/${cat.slug}/">Browse All ${catPages.length} ${esc(cat.title)} Calculators &rarr;</a>
+      </div>
+    </div>`;
+  }).join('');
+
+  const searchDataJson = JSON.stringify(calculatorPages.map((p) => ({
+    slug: p.slug,
+    title: p.title,
+    description: p.description,
+    family: p.family,
+    category: getCalculatorCategory(p).title,
+    categorySlug: getCalculatorCategory(p).slug,
+    keywords: (p.keywords || []).join(' '),
+  })));
 
   return `<!doctype html>
 <html lang="en">
@@ -9687,47 +9940,105 @@ export function renderCalculatorIndex() {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>StatLab Statistical Test Calculators | pSEO Directory</title>
-  <meta name="description" content="Free static, shareable statistical test calculators: Mann-Whitney U, Welch t-test, ANOVA variants, non-parametric tests, Bayesian statistics, survival reliability analysis, AI ML metrics, probability distributions, econometrics, and release readiness benchmarking.">
+  <meta name="description" content="Browse 376 free, shareable statistical test calculators classified by use case: hypothesis testing, causal inference, time series, AI/ML evaluation, survival, spatial statistics, SPC, and probability distributions.">
   <link rel="canonical" href="${ORIGIN}/calculators/">
   <meta property="og:title" content="StatLab Statistical Test Calculators | pSEO Directory">
-  <meta property="og:description" content="Free static, shareable statistical test calculators: Mann-Whitney U, Welch t-test, ANOVA variants, non-parametric tests, Bayesian statistics, survival reliability analysis, AI ML metrics, probability distributions, econometrics, and release readiness benchmarking.">
+  <meta property="og:description" content="Browse 376 free, shareable statistical test calculators classified by use case: hypothesis testing, causal inference, time series, AI/ML evaluation, survival, spatial statistics, SPC, and probability distributions.">
   <meta property="og:url" content="${ORIGIN}/calculators/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="StatLab">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="StatLab Statistical Test Calculators | pSEO Directory">
-  <meta name="twitter:description" content="Free static, shareable statistical test calculators: Mann-Whitney U, Welch t-test, ANOVA variants, non-parametric tests, Bayesian statistics, survival reliability analysis, AI ML metrics, probability distributions, econometrics, and release readiness benchmarking.">
+  <meta name="twitter:description" content="Browse 376 free, shareable statistical test calculators classified by use case: hypothesis testing, causal inference, time series, AI/ML evaluation, survival, spatial statistics, SPC, and probability distributions.">
   <style>
-    body{margin:0;background:#080b10;color:#edf4ff;font-family:Inter,ui-sans-serif,system-ui,sans-serif;line-height:1.5}.wrap{max-width:1120px;margin:auto;padding:40px 20px}a{color:#5df2b6}.brand{font-weight:900;letter-spacing:.08em;text-decoration:none;color:#edf4ff;font-size:20px}.brand span{color:#5df2b6}h1{font-size:clamp(36px,6vw,72px);line-height:.95;margin:16px 0 12px;letter-spacing:-.04em}.eyebrow{color:#5df2b6;font-size:12px;text-transform:uppercase;letter-spacing:.14em;font-weight:800}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:28px}.card{display:block;text-decoration:none;color:#edf4ff;background:#111722;border:1px solid #243246;border-radius:18px;padding:20px;transition:border-color .15s ease}.card:hover{border-color:#5df2b6}.banner{background:linear-gradient(135deg,#111722 0%,#0d1420 100%);border:1px solid #243246;border-radius:20px;padding:24px;margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:760px){.grid,.banner{grid-template-columns:1fr}}
+    body{margin:0;background:#080b10;color:#edf4ff;font-family:Inter,ui-sans-serif,system-ui,sans-serif;line-height:1.5}.wrap{max-width:1120px;margin:auto;padding:40px 20px}a{color:#5df2b6}.brand{font-weight:900;letter-spacing:.08em;text-decoration:none;color:#edf4ff;font-size:20px}.brand span{color:#5df2b6}h1{font-size:clamp(36px,6vw,68px);line-height:.95;margin:16px 0 12px;letter-spacing:-.04em}.eyebrow{color:#5df2b6;font-size:12px;text-transform:uppercase;letter-spacing:.14em;font-weight:800}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:24px}.card{display:block;text-decoration:none;color:#edf4ff;background:#111722;border:1px solid #243246;border-radius:18px;padding:22px;transition:border-color .15s ease}.card:hover{border-color:#5df2b6}.cat-btn{display:inline-block;font-weight:700;font-size:13px;color:#5df2b6;text-decoration:none;padding:8px 14px;background:rgba(93,242,182,0.08);border:1px solid rgba(93,242,182,0.3);border-radius:6px}.banner{background:linear-gradient(135deg,#111722 0%,#0d1420 100%);border:1px solid #243246;border-radius:20px;padding:24px;margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:760px){.grid,.banner{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <main class="wrap">
     <a class="brand" href="/">STAT<span>LAB</span></a>
     <h1>Statistical Calculators</h1>
-    <p style="font-size:19px;color:#9db0c7;max-width:760px">Static, shareable method pages backed by the zero-dependency StatLab inference engine. Designed for developers, statistical engineers, and research teams.</p>
+    <p style="font-size:19px;color:#9db0c7;max-width:760px">376 static, shareable method pages classified by statistical use case. Backed by the zero-dependency StatLab inference engine.</p>
     
-    <section class="grid">
-      ${cards}
+    <div style="margin:24px 0 28px">
+      <div style="position:relative;max-width:760px">
+        <input type="text" id="calculator-search" placeholder="🔍  Search 376 calculators by name, keyword, method, or use case (e.g. t-test, GARCH, CQR, Cpk)..." style="width:100%;background:#111722;border:1px solid #243246;border-radius:12px;padding:14px 18px;font-size:15px;color:#edf4ff;box-sizing:border-box;outline:none;box-shadow:0 4px 20px rgba(0,0,0,0.25)">
+        <span id="search-count" style="position:absolute;right:16px;top:15px;font-size:13px;color:#5df2b6;font-weight:700"></span>
+      </div>
+    </div>
+
+    <div id="search-results" class="grid" style="display:none"></div>
+
+    <section id="category-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
+        <h2 style="font-size:22px;margin:0;color:#fff">Calculators by Category Use Case (12 Hubs)</h2>
+        <span style="font-size:13px;color:#9db0c7">376 Calculators</span>
+      </div>
+      <div class="grid">
+        ${categoryCards}
+      </div>
     </section>
 
     <section class="banner">
       <div>
         <h3 style="margin:0 0 8px;color:#5df2b6">StatLab Interactive Workbench</h3>
-        <p style="margin:0;font-size:14px;color:#9db0c7">Embed continuous statistical testing into live telemetry pipelines, A/B test routing, and feature flag analytics directly in your browser.</p>
+        <p style="margin:0;font-size:14px;color:#9db0c7">Run live statistical tests, import CSV data, and export publication-ready APA results directly in your browser.</p>
       </div>
       <div>
         <h3 style="margin:0 0 8px;color:#38bdf8">@statlab/core TypeScript Library</h3>
-        <p style="margin:0;font-size:14px;color:#9db0c7">Validate release candidate performance, latency distribution shifts, and LLM output quality scores with zero-dependency TypeScript functions.</p>
+        <p style="margin:0;font-size:14px;color:#9db0c7">Zero-dependency, high-performance TypeScript statistics and probability engine for web apps, APIs, and microservices.</p>
       </div>
     </section>
   </main>
+
+  <script>
+    (function() {
+      const calculatorsData = ${searchDataJson};
+      const input = document.getElementById('calculator-search');
+      const searchResults = document.getElementById('search-results');
+      const categorySection = document.getElementById('category-section');
+      const searchCount = document.getElementById('search-count');
+
+      input.addEventListener('input', function(e) {
+        const q = e.target.value.trim().toLowerCase();
+        if (!q) {
+          searchResults.style.display = 'none';
+          categorySection.style.display = 'block';
+          searchCount.textContent = '';
+          return;
+        }
+        const matches = calculatorsData.filter(function(c) {
+          return c.title.toLowerCase().indexOf(q) !== -1 ||
+                 c.description.toLowerCase().indexOf(q) !== -1 ||
+                 c.keywords.toLowerCase().indexOf(q) !== -1 ||
+                 c.family.toLowerCase().indexOf(q) !== -1 ||
+                 c.category.toLowerCase().indexOf(q) !== -1;
+        });
+        categorySection.style.display = 'none';
+        searchResults.style.display = 'grid';
+        searchCount.textContent = matches.length + ' found';
+        if (matches.length === 0) {
+          searchResults.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:#9db0c7">No calculators match "' + q.replace(/[&<>"']/g, '') + '". Try searching for t-test, ANOVA, regression, survival, or GARCH.</div>';
+        } else {
+          searchResults.innerHTML = matches.map(function(c) {
+            return '<a class="card" href="/calculators/' + c.slug + '/">' +
+              '<span class="eyebrow">' + c.category + '</span>' +
+              '<h2 style="margin:6px 0 8px;font-size:18px">' + c.title + '</h2>' +
+              '<p style="font-size:14px;color:#9db0c7;margin:0 0 12px">' + c.description + '</p>' +
+              '<span style="font-weight:700;font-size:13px;color:#5df2b6">Open Calculator →</span>' +
+            '</a>';
+          }).join('');
+        }
+      });
+    })();
+  </script>
 </body>
 </html>`;
 }
 
 export function renderSitemap() {
-  const urls = ['/', '/calculators/', ...calculatorPages.map(calculatorPath)];
+  const categoryPaths = CATEGORIES.map((c) => `/calculators/${c.slug}/`);
+  const urls = ['/', '/calculators/', ...categoryPaths, ...calculatorPages.map(calculatorPath)];
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((path) => `  <url><loc>${ORIGIN}${path}</loc></url>`).join('\n')}\n</urlset>\n`;
 }
 
@@ -9735,17 +10046,31 @@ export function generateSeoCalculatorPages(root = join(process.cwd(), 'public'))
   const calculatorsDir = join(root, 'calculators');
   rmSync(calculatorsDir, { recursive: true, force: true });
   mkdirSync(calculatorsDir, { recursive: true });
+
+  // 1. Render main index (/calculators/index.html)
   writeFileSync(join(calculatorsDir, 'index.html'), renderCalculatorIndex());
+
+  // 2. Render intermediate category pages (/calculators/<category-slug>/index.html)
+  for (const category of CATEGORIES) {
+    const catDir = join(calculatorsDir, category.slug);
+    mkdirSync(catDir, { recursive: true });
+    const catPages = calculatorPages.filter((p) => getCalculatorCategory(p).slug === category.slug);
+    writeFileSync(join(catDir, 'index.html'), renderCategoryPage(category, catPages));
+  }
+
+  // 3. Render individual calculator pages (/calculators/<slug>/index.html)
   for (const page of calculatorPages) {
     const dir = join(calculatorsDir, page.slug);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, 'index.html'), renderCalculatorPage(page));
   }
+
+  // 4. Generate sitemap and robots.txt
   writeFileSync(join(root, 'sitemap.xml'), renderSitemap());
   writeFileSync(join(root, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   generateSeoCalculatorPages();
-  console.log(`Generated ${calculatorPages.length} calculator pages in public/calculators`);
+  console.log(`Generated ${calculatorPages.length} calculator pages across ${CATEGORIES.length} category hubs in public/calculators`);
 }
