@@ -9593,9 +9593,68 @@ export const CATEGORIES = [
   },
 ];
 
-export function getCalculatorCategory(page) {
-  const cat = CATEGORIES.find((c) => c.families.includes(page.family));
-  return cat || CATEGORIES[CATEGORIES.length - 1];
+export function getCalculatorCategory(p) {
+  const f = (p.family || '').toLowerCase();
+  const t = (p.title || '').toLowerCase();
+  const s = (p.slug || '').toLowerCase();
+
+  // 1. Survival & Reliability & Risk
+  if (f.includes('survival') || f.includes('reliability') || s.includes('kaplan') || s.includes('weibull') || s.includes('log-rank') || s.includes('hazard') || s.includes('nelson-aalen') || s.includes('mtbf') || s.includes('rmst') || s.includes('frailty') || s.includes('competing-risk') || s.includes('c-index') || (s.includes('var') && s.includes('value-at-risk')) || (s.includes('alt') && s.includes('accelerated')) || s.includes('ram-model') || s.includes('block-diagram')) {
+    return CATEGORIES.find((c) => c.slug === 'survival-reliability-risk');
+  }
+
+  // 2. Spatial Statistics & Geostatistics
+  if (f.includes('spatial') || s.includes('moran') || s.includes('geary') || s.includes('ripley') || s.includes('kriging') || s.includes('variogram') || s.includes('lisa') || s.includes('point-process') || s.includes('hawkes') || s.includes('sdm') || s.includes('spatial-error') || s.includes('anisotropy')) {
+    return CATEGORIES.find((c) => c.slug === 'spatial-statistics-geostatistics');
+  }
+
+  // 3. SPC & Quality Control
+  if (f.includes('process control') || f.includes('spc') || s.includes('cpk') || s.includes('xbar') || s.includes('dpmo') || s.includes('gage-rr') || s.includes('p-chart') || s.includes('c-chart') || s.includes('cusum') || s.includes('ewma-control') || s.includes('tolerance-interval') || s.includes('mts') || s.includes('taguchi') || s.includes('plackett')) {
+    return CATEGORIES.find((c) => c.slug === 'quality-control-spc');
+  }
+
+  // 4. Vector Distances & Embeddings
+  if (f.includes('vector distance') || s.includes('cosine-similarity') || s.includes('wasserstein') || s.includes('mahalanobis-distance') || s.includes('euclidean') || s.includes('bray-curtis') || s.includes('minkowski') || s.includes('jaccard') || s.includes('hamming') || s.includes('haversine') || s.includes('bhattacharyya') || s.includes('hellinger') || s.includes('gower') || s.includes('hopkins') || s.includes('overlap')) {
+    return CATEGORIES.find((c) => c.slug === 'vector-distances-embeddings');
+  }
+
+  // 5. Psychometrics & Scale Analysis & Correlation
+  if (f.includes('psychometrics') || f.includes('irt') || f.includes('correlation') || s.includes('cronbach') || s.includes('rasch') || s.includes('omega') || s.includes('irt') || s.includes('dif') || s.includes('cfa') || s.includes('bifactor') || s.includes('latent-growth') || s.includes('guttman') || s.includes('conjoint') || s.includes('samejima') || s.includes('correlation') || s.includes('sem-path') || s.includes('canonical-variate')) {
+    return CATEGORIES.find((c) => c.slug === 'psychometrics-scale-analysis');
+  }
+
+  // 6. Causal Inference, Biostatistics & Kinetic Models
+  if (f.includes('causal') || f.includes('biostatistics') || f.includes('meta-analysis') || f.includes('growth, decay') || s.includes('synthetic-control') || s.includes('did') || s.includes('rdd') || s.includes('psm') || s.includes('ipw') || s.includes('causal-forest') || s.includes('odds-ratio') || s.includes('relative-risk') || s.includes('mantel-haenszel') || s.includes('number-needed') || s.includes('diagnostic-likelihood') || s.includes('bland-altman') || s.includes('augsynth') || s.includes('gsc') || s.includes('meta-analysis') || s.includes('half-life') || s.includes('arrhenius') || s.includes('growth') || s.includes('hill-equation') || s.includes('michaelis') || s.includes('funnel-plot')) {
+    return CATEGORIES.find((c) => c.slug === 'causal-inference-biostatistics');
+  }
+
+  // 7. Time Series, Econometrics & Volatility
+  if (f.includes('time series') || f.includes('volatility') || f.includes('econometrics') || s.includes('garch') || s.includes('arch') || s.includes('arima') || s.includes('var-vector') || s.includes('vecm') || s.includes('dickey-fuller') || s.includes('kpss') || s.includes('ljung-box') || s.includes('autocorrelation') || s.includes('granger') || s.includes('sharpe') || s.includes('heteroscedasticity') || s.includes('breusch') || s.includes('goldfeld') || s.includes('hausman') || s.includes('pesaran') || s.includes('zivot') || s.includes('chow-test') || s.includes('bds-test') || s.includes('diebold') || s.includes('kalman') || s.includes('filter') || s.includes('black-scholes') || s.includes('heston') || s.includes('merton') || s.includes('vasicek') || s.includes('cir') || s.includes('hull-white') || s.includes('binomial-tree') || s.includes('option') || s.includes('parkinson') || s.includes('garman') || s.includes('yang-zhang') || s.includes('rogers-satchell') || s.includes('ardl') || s.includes('toda-yamamoto') || s.includes('durbin-watson')) {
+    return CATEGORIES.find((c) => c.slug === 'time-series-econometrics');
+  }
+
+  // 8. AI/ML Evaluation & Decisioning
+  if (f.includes('ai') || f.includes('ml') || f.includes('evaluation') || f.includes('information theory') || s.includes('confusion-matrix') || s.includes('roc-auc') || s.includes('kappa') || s.includes('brier') || s.includes('ndcg') || s.includes('mape') || s.includes('matthews') || s.includes('huber-loss') || s.includes('silhouette') || s.includes('davies-bouldin') || s.includes('calinski') || s.includes('shap') || s.includes('integrated-gradients') || s.includes('bandit') || s.includes('thompson') || s.includes('ucb1') || s.includes('conformal') || s.includes('venn-abers') || s.includes('kl-divergence') || s.includes('shannon-entropy') || s.includes('cross-entropy') || s.includes('mutual-information') || s.includes('transfer-entropy') || s.includes('conditional-mutual') || s.includes('dbscan') || s.includes('optics') || s.includes('lof') || s.includes('isolation-forest') || s.includes('one-class-svm') || s.includes('lasso') || s.includes('ridge') || s.includes('scad') || s.includes('mcp-minimax') || s.includes('group-lasso') || s.includes('qrf') || s.includes('gmm') || s.includes('icc-intraclass') || s.includes('pls') || s.includes('pcr')) {
+    return CATEGORIES.find((c) => c.slug === 'machine-learning-ai-evaluation');
+  }
+
+  // 9. Resampling & Non-parametric
+  if (f.includes('nonparametric') || f.includes('non-parametric') || f.includes('resampling') || f.includes('ordinal') || f.includes('equivalence') || f.includes('categorical') || s.includes('bootstrap') || s.includes('permutation') || s.includes('mann-whitney') || s.includes('wilcoxon') || s.includes('kruskal') || s.includes('friedman') || s.includes('dunn-test') || s.includes('kolmogorov') || s.includes('rank-biserial') || s.includes('median-absolute-deviation') || s.includes('winsorized') || s.includes('theil-sen') || s.includes('siegel') || s.includes('hodges-lehmann') || s.includes('cochran') || s.includes('jonckheere') || s.includes('kendall-w') || s.includes('goodman-kruskal') || s.includes('somers') || s.includes('hoeffding') || s.includes('tost') || s.includes('rayleigh-test') || s.includes('watson-williams') || s.includes('kuiper') || s.includes('mood') || s.includes('fligner') || s.includes('ansari') || s.includes('biserial') || s.includes('tetrachoric') || s.includes('polychoric') || s.includes('chi-square-test') || s.includes('cramers-v') || s.includes('mcnemar') || s.includes('stuart-maxwell') || s.includes('cohen-w')) {
+    return CATEGORIES.find((c) => c.slug === 'resampling-nonparametric');
+  }
+
+  // 10. Probability & Multivariate Distributions
+  if (f.includes('probability') || f.includes('distribution') || f.includes('extreme value') || f.includes('transformations') || s.includes('z-score') || s.includes('t-score') || s.includes('f-distribution') || s.includes('chi-square-distribution') || s.includes('pca') || s.includes('manova') || s.includes('gev') || s.includes('pareto') || s.includes('pot-peaks') || s.includes('return-period') || s.includes('gumbel') || s.includes('weibull-two') || s.includes('log-normal') || s.includes('gamma-distribution') || s.includes('cauchy') || s.includes('beta-distribution') || s.includes('dirichlet') || s.includes('hypergeometric') || s.includes('negative-binomial') || s.includes('multinomial') || s.includes('exponential-distribution') || s.includes('poisson-distribution') || s.includes('log-logistic') || s.includes('rayleigh-distribution') || s.includes('skew-normal') || s.includes('lambda-distribution') || s.includes('inverse-gaussian') || s.includes('hyperbolic') || s.includes('normal-inverse') || s.includes('johnson-su') || s.includes('maxwell-boltzmann') || s.includes('zero-inflated-poisson') || s.includes('log-gamma') || s.includes('studentized-range') || s.includes('multivariate-t') || s.includes('matrix-variate') || s.includes('skew-t') || s.includes('mds') || s.includes('cva') || s.includes('bivariate-normal') || s.includes('truncated-normal') || s.includes('fastica') || s.includes('t-sne') || s.includes('umap') || s.includes('box-cox') || s.includes('yeo-johnson')) {
+    return CATEGORIES.find((c) => c.slug === 'probability-distributions');
+  }
+
+  // 11. Hypothesis Testing & ANOVA
+  if (f.includes('compare means') || f.includes('anova') || f.includes('power') || s.includes('t-test') || s.includes('anova') || s.includes('tukey') || s.includes('eta-squared') || s.includes('dunnett') || s.includes('sample-size') || s.includes('brown-forsythe') || s.includes('z-test') || s.includes('response-surface') || s.includes('ab-test') || s.includes('significance') || s.includes('levene')) {
+    return CATEGORIES.find((c) => c.slug === 'hypothesis-testing-anova');
+  }
+
+  // 12. Signal Processing, Wavelets & Networks
+  return CATEGORIES.find((c) => c.slug === 'signal-processing-networks');
 }
 
 const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
