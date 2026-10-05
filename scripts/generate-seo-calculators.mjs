@@ -9050,6 +9050,462 @@ export const calculatorPages = [
     ],
     workbenchId: 'ts_particle_filter',
   },
+  // --- SYNTHETIC CONTROL, DID & CAUSAL ML ---
+  {
+    slug: 'synthetic-control-augsynth',
+    title: 'Augmented Synthetic Control (AugSynth) bias-corrected estimator calculator',
+    family: 'Biostatistics, causal inference & risk metrics',
+    description: 'Calculate bias-corrected counterfactual outcomes using Augmented Synthetic Control (AugSynth) combining ridge regression and synthetic weights.',
+    keywords: ['AugSynth calculator', 'Augmented Synthetic Control', 'causal inference AugSynth', 'synthetic control bias correction', 'panel data causal effect'],
+    inputs: ['Treated unit outcome series', 'Donor pool panel matrix', 'Pre-treatment period duration T_pre', 'Ridge penalty parameter λ'],
+    example: { a: ['Treated unit: T_pre = 10, T_post = 5', 'Donor pool = 15 units', 'λ = 0.05'], result: 'AugSynth ATT = +4.18 (95% placebo CI: [1.82, 6.54], bias correction offset = -0.62)' },
+    formula: 'ŷ_{1t} = ∑ w_i y_{it} + (m(x_1) - ∑ w_i m(x_i)); w* = argmin_w ||y_{1,pre} - Y_{donor,pre} w||² + λ ||w||²',
+    code: {
+      python: `from aughsynth import AugSynth\nmodel = AugSynth(synth_penalty="auto").fit(df, outcome="y", unit="id", time="t", treated_unit=1, treatment_time=11)\natt = model.predict()`,
+      r: `library(augsynth)\nsyn <- augsynth(y ~ treated, unit = id, time = t, data = df, progfunc = "ridge")\nsummary(syn)`,
+      ts: `import { augSynth } from '@statlab/core';\nconst res = augSynth(treatedSeries, donorMatrix, { tPre: 10, lambda: 0.05 });`,
+    },
+    useCases: [
+      'Estimating city-wide policy intervention impact when donor control matches have imperfect pre-treatment parallel fit.',
+      'Evaluating platform-level regional feature rollouts with panel outcome matrix data.'
+    ],
+    when: 'Use when standard synthetic control has pre-treatment fit bias or donor pool size is limited.',
+    cautions: [
+      'Verify donor units did not receive partial spillover treatment during the post-intervention window.',
+      'Construct placebo permutation tests across donor units to assess statistical significance.'
+    ],
+    workbenchId: 'causal_augsynth',
+  },
+  {
+    slug: 'difference-in-differences-staggered-did',
+    title: "Staggered Difference-in-Differences (Callaway & Sant'Anna) calculator",
+    family: 'Biostatistics, causal inference & risk metrics',
+    description: "Calculate group-time average treatment effects ATT(g,t) under staggered adoption using Callaway and Sant'Anna non-parametric DiD estimation.",
+    keywords: ['staggered DiD calculator', 'Callaway SantAnna DiD', 'difference in differences staggered', 'group time ATT', 'parallel trends test'],
+    inputs: ['Panel dataset with group rollout times g', 'Time periods t', 'Outcome variable Y', 'Control group specification (never-treated / not-yet-treated)'],
+    example: { a: ['Rollout cohorts: g=2018, 2019, 2020', 'Control: Never-treated', 'Time period: 2015-2022'], result: 'Overall Aggregated ATT = +12.4 (SE = 2.15, p < .001). Pre-trend dynamic coefficients satisfy parallel trends (p = .42).' },
+    formula: 'ATT(g,t) = E[ (Y_t - Y_{g-1}) - (Y_t^{C} - Y_{g-1}^{C}) | G_g = 1 ]; Aggregated ATT = ∑ w(g,t) ATT(g,t)',
+    code: {
+      python: `import linearmodels as lm\n# Or statsmodels panel staggered DiD estimator\nfrom diff_in_diffs import CallawaySantAnna\nres = CallawaySantAnna(df, y="outcome", id="unit", time="year", g="cohort").fit()`,
+      r: `library(did)\nout <- att_gt(yname = "outcome", gname = "cohort", idname = "unit", tname = "year", data = df)\naggte(out, type = "dynamic")`,
+      ts: `import { staggeredDiD } from '@statlab/core';\nconst res = staggeredDiD(panelData, { cohortCol: 'cohort', timeCol: 'year', outcomeCol: 'y' });`,
+    },
+    useCases: [
+      'Evaluating staggered regulatory policy rollouts across multiple states or geographic jurisdictions.',
+      'Measuring long-term SaaS product feature adoption effects rolled out in waves to different user cohorts.'
+    ],
+    when: 'Use when treatment adoption occurs at different time periods for different units (staggered rollout).',
+    cautions: [
+      'Two-Way Fixed Effects (TWFE) OLS yields severe bias under dynamic treatment effects; use Callaway & Sant’Anna or Sun & Abraham estimators.',
+      'Check parallel pre-trends for each cohort g using dynamic event-study plots.'
+    ],
+    workbenchId: 'causal_staggered_did',
+  },
+  {
+    slug: 'heterogeneous-treatment-effect-causal-forest',
+    title: 'Causal Forest Heterogeneous Treatment Effect (HTE) calculator',
+    family: 'Biostatistics, causal inference & risk metrics',
+    description: 'Calculate Conditional Average Treatment Effects CATE(X) and heterogeneous subgroup treatment response using generalized random causal forests.',
+    keywords: ['Causal Forest calculator', 'heterogeneous treatment effect HTE', 'CATE estimation', 'GRF causal forest', 'subgroup analysis'],
+    inputs: ['Feature matrix X', 'Treatment vector W ∈ {0,1}', 'Outcome vector Y', 'Number of trees N_tree', 'Honest splitting ratio'],
+    example: { a: ['Features X: 8 covariates', 'Sample size N = 2000', 'Trees = 500'], result: 'Mean CATE = +5.20. Subgroup X1 > 4.5 exhibits elevated CATE = +11.80 (Differential test p = .003).' },
+    formula: 'τ̂(x) = [ ∑_{i=1}^n α_i(x) (W_i - W̄(x)) (Y_i - Ȳ(x)) ] / [ ∑_{i=1}^n α_i(x) (W_i - W̄(x))² ]',
+    code: {
+      python: `from econml.dml import CausalForestDML\ncf = CausalForestDML(n_estimators=500, discrete_treatment=True)\ncf.fit(Y, W, X=X)\ncate = cf.effect(X_test)`,
+      r: `library(grf)\nc_forest <- causal_forest(X, Y, W)\ntau_hat <- predict(c_forest)$predictions`,
+      ts: `import { causalForest } from '@statlab/core';\nconst res = causalForest(X, W, Y, { nTrees: 500 });`,
+    },
+    useCases: [
+      'Personalized medicine subgroup response estimation from clinical trial observational data.',
+      'Identifying high-responsiveness customer cohorts for targeted incentive deployment.'
+    ],
+    when: 'Use when treatment effect varies systematically across non-linear high-dimensional baseline covariates (CATE).',
+    cautions: [
+      'Requires honest sampling (separate subsamples for tree structure building and leaf estimation) to prevent over-fitting.',
+      'Check overlap / unconfoundedness assumptions (propensity scores should be strictly bounded between 0.05 and 0.95).'
+    ],
+    workbenchId: 'causal_forest',
+  },
+  {
+    slug: 'regression-discontinuity-fuzzy-rdd',
+    title: 'Fuzzy Regression Discontinuity Design (Fuzzy RDD) calculator',
+    family: 'Biostatistics, causal inference & risk metrics',
+    description: 'Calculate local average treatment effect (LATE) at a running variable cutoff under imperfect compliance using Fuzzy RDD instrumental variable estimation.',
+    keywords: ['Fuzzy RDD calculator', 'Regression Discontinuity fuzzy', 'LATE estimator', 'instrumental variable RDD', 'rdrobust fuzzy'],
+    inputs: ['Running variable X', 'Cutoff threshold c', 'Actual treatment status D', 'Outcome Y', 'Bandwidth selection (IK / CCE)'],
+    example: { a: ['Running var cutoff c = 50.0', 'Optimal bandwidth h = 6.42', 'Triangular kernel'], result: 'Fuzzy RDD LATE = +8.45 (Robust 95% CI: [3.12, 13.78], p = .002). Compliance jump at cutoff ΔP(D) = 0.72.' },
+    formula: 'τ_{FRDD} = [ lim_{x↓c} E[Y|X=x] - lim_{x↑c} E[Y|X=x] ] / [ lim_{x↓c} E[D|X=x] - lim_{x↑c} E[D|X=x] ]',
+    code: {
+      python: `import rdrobust\nres = rdrobust.rdrobust(y=Y, x=X, c=50.0, fuzzy=D)\nprint(res)`,
+      r: `library(rdrobust)\nrd <- rdrobust(y = Y, x = X, c = 50.0, fuzzy = D)\nsummary(rd)`,
+      ts: `import { fuzzyRDD } from '@statlab/core';\nconst res = fuzzyRDD(X, D, Y, { cutoff: 50.0 });`,
+    },
+    useCases: [
+      'Measuring impact of financial aid eligibility thresholds when enrollment compliance is imperfect.',
+      'Evaluating credit line expansion thresholds with partial opt-in user compliance.'
+    ],
+    when: 'Use when assignment probability jumps discontinuously at a cutoff c but does not switch deterministically from 0 to 1.',
+    cautions: [
+      'Verify running variable density continuity across cutoff c using McCrary density test to rule out manipulation.',
+      'Report robust local-polynomial confidence intervals (Calonico, Cattaneo, Titiunik).'
+    ],
+    workbenchId: 'causal_fuzzy_rdd',
+  },
+  // --- SPATIAL & SPATIOTEMPORAL ADVANCED ---
+  {
+    slug: 'spatial-error-model-sem-maximum-likelihood',
+    title: 'Spatial Error Model (SEM) Maximum Likelihood calculator',
+    family: 'Spatial statistics & geostatistics',
+    description: 'Estimate spatial autoregressive residual dependency λ in panel and cross-sectional spatial regression models using Maximum Likelihood.',
+    keywords: ['Spatial Error Model calculator', 'SEM spatial regression', 'spatial autoregressive residual λ', 'spatial weights matrix W', 'spatial ML estimation'],
+    inputs: ['Dependent variable vector Y', 'Explanatory matrix X', 'Spatial weight matrix W (row-standardized)', 'Optimization convergence tolerance'],
+    example: { a: ['N = 120 spatial units', 'Row-standardized weight matrix W', 'Covariates = 3'], result: 'Spatial error coefficient λ = 0.412 (LR test p < .001). β_1 = 2.14 (SE = 0.38).' },
+    formula: 'Y = X β + u, where u = λ W u + ε, ε ~ N(0, σ² I); Log-L(λ) = -N/2 ln(σ²) + ln|I - λ W| - (1/2σ²) eᵀ e',
+    code: {
+      python: `from pysal.model import spreg\nmodel = spreg.ML_Error(y, x, w=w)\nprint(model.summary)`,
+      r: `library(spatialreg)\nfit <- errorsarlm(y ~ x1 + x2, data = df, listw = spatial_weights)\nsummary(fit)`,
+      ts: `import { spatialErrorModel } from '@statlab/core';\nconst res = spatialErrorModel(Y, X, W);`,
+    },
+    useCases: [
+      'Correcting spatially correlated residual error clusters in regional economic regression modeling.',
+      'Geographic real estate price modeling with unobserved neighborhood environmental spatial correlation.'
+    ],
+    when: 'Use when spatial autocorrelation exists in regression error residuals rather than directly in the outcome lag.',
+    cautions: [
+      'Row-standardize spatial matrix W so each row sums to 1.0.',
+      'If spatial dependency occurs in both Y and residuals, consider the Spatial Durbin Model (SDM).'
+    ],
+    workbenchId: 'spatial_error_ml',
+  },
+  {
+    slug: 'spatial-durbin-model-sdm',
+    title: 'Spatial Durbin Model (SDM) direct & indirect spillover calculator',
+    family: 'Spatial statistics & geostatistics',
+    description: 'Calculate spatial direct, indirect (spillover), and total impacts incorporating spatial lags of both dependent variable Y and independent variables X.',
+    keywords: ['Spatial Durbin Model calculator', 'SDM spatial spillover', 'spatial direct indirect impact', 'spatial lag SDM', 'LeSage Pace impacts'],
+    inputs: ['Dependent vector Y', 'Explanatory matrix X', 'Spatial weights W', 'Spatial lag parameters ρ and γ'],
+    example: { a: ['Units N = 150', 'Spatial lag ρ = 0.35', 'Covariate X1 spatial lag γ1 = 0.18'], result: 'Direct Impact X1 = 1.45. Indirect Spillover Impact X1 = 0.62 (Total Impact = 2.07, p = .004).' },
+    formula: 'Y = ρ W Y + X β + W X γ + ε; Impact Matrix S(W) = (I - ρ W)⁻¹ (I β_k + W γ_k)',
+    code: {
+      python: `from pysal.model import spreg\n# Spatial Durbin Model fit via PySAL / spreg ML_Lag with spatial lag covariates WX\nmodel = spreg.ML_Lag(y, x, w=w, slx_lags=1)`,
+      r: `library(spatialreg)\nsdm <- lagsarlm(y ~ x1 + x2, data = df, listw = spatial_weights, Durbin = TRUE)\nimpactions <- impacts(sdm, listw = spatial_weights, R = 500)`,
+      ts: `import { spatialDurbinModel } from '@statlab/core';\nconst res = spatialDurbinModel(Y, X, W);`,
+    },
+    useCases: [
+      'Quantifying regional infrastructure investment direct impact vs neighboring county economic spillover.',
+      'Modeling local pollution abatement policy impacts on neighboring industrial district emissions.'
+    ],
+    when: 'Use when spatial spillovers arise from both neighboring outcomes (W Y) and neighboring features (W X).',
+    cautions: [
+      'Do not interpret OLS coefficients β directly as marginal effects; compute LeSage & Pace direct and indirect scalar summaries.',
+      'Matrix inversion (I - ρ W)⁻¹ requires dense computation for large spatial N.'
+    ],
+    workbenchId: 'spatial_durbin',
+  },
+  {
+    slug: 'spatiotemporal-point-process-hawkes',
+    title: 'Self-Exciting Hawkes Process spatio-temporal calculator',
+    family: 'Spatial statistics & geostatistics',
+    description: 'Calculate spatio-temporal self-exciting event intensity λ(t, x, y) with background baseline rate and exponential memory decay kernels.',
+    keywords: ['Hawkes process calculator', 'self exciting point process', 'spatiotemporal Hawkes', 'branching ratio Hawkes', 'earthquake crime point process'],
+    inputs: ['Event timestamps t_i', 'Event coordinates (x_i, y_i)', 'Background rate μ', 'Branching ratio α', 'Decay rate β', 'Spatial kernel bandwidth σ'],
+    example: { a: ['Events N = 450', 'Background μ = 0.12', 'Decay β = 1.5', 'Branching ratio α = 0.65'], result: 'Hawkes Branching Ratio n* = 0.65 (< 1.0 subcritical stationary). Expected offspring events per trigger = 0.65.' },
+    formula: 'λ(t, x, y) = μ(x, y) + ∑_{t_i < t} α exp(-β (t - t_i)) * (1 / (2πσ²)) exp( -((x-x_i)² + (y-y_i)²) / (2σ²) )',
+    code: {
+      python: `from tick.hawkes import HawkesExpKern\nhawkes = HawkesExpKern(decays=1.5)\nhawkes.fit(events)\nprint(f"Baseline: {hawkes.baseline}, Adjacency: {hawkes.adjacency}")`,
+      r: `library(ptproc)\n# Fit spatiotemporal self-exciting Hawkes model using maximum likelihood`,
+      ts: `import { hawkesProcess } from '@statlab/core';\nconst res = hawkesProcess(events, { mu: 0.12, alpha: 0.65, beta: 1.5 });`,
+    },
+    useCases: [
+      'Modeling seismic foreshock / aftershock clustering sequences in geophysics.',
+      'Tracking social media viral re-post cascade outbreaks and urban incident clustering.'
+    ],
+    when: 'Use when occurrences of an event temporarily increase the probability of subsequent events nearby in space and time.',
+    cautions: [
+      'Branching ratio α / β must remain strictly < 1.0 for the process to be stationary (preventing explosive runaway intensity).',
+      'Requires precise event timestamp and coordinate logging.'
+    ],
+    workbenchId: 'spatiotemporal_hawkes',
+  },
+  // --- MULTI-ARMED BANDITS & ADAPTIVE DECISIONING ---
+  {
+    slug: 'multi-arm-bandit-thompson-sampling',
+    title: 'Multi-Armed Bandit Thompson Sampling policy calculator',
+    family: 'Information theory & machine learning',
+    description: 'Calculate Beta-Binomial posterior distributions, arm allocation probabilities, and expected cumulative regret under Thompson Sampling adaptive routing.',
+    keywords: ['Thompson Sampling calculator', 'multi armed bandit Thompson', 'Beta Binomial bandit', 'adaptive A/B testing bandit', 'regret minimization bandit'],
+    inputs: ['Arm counts K', 'Successes S_k per arm', 'Failures F_k per arm', 'Prior parameters α_0, β_0 (default 1, 1)', 'Monte Carlo draws M'],
+    example: { a: ['Arm 1: 45 successes / 100 trials', 'Arm 2: 62 successes / 100 trials', 'Arm 3: 38 successes / 100 trials'], result: 'Thompson Allocation Probabilities: Arm 1 = 2.1%, Arm 2 = 97.4%, Arm 3 = 0.5%. Expected Regret Reduction = 84.2% vs static A/B.' },
+    formula: 'θ_k ~ Beta(α_0 + S_k, β_0 + F_k); Arm Chosen k* = argmax_k θ_k; P(Choose k) = P(θ_k = max_j θ_j)',
+    code: {
+      python: `import numpy as np\nsamples = [np.random.beta(1 + s, 1 + f) for s, f in zip(successes, failures)]\nchosen_arm = np.argmax(samples)`,
+      r: `samples <- rbeta(K, 1 + successes, 1 + failures)\nchosen_arm <- which.max(samples)`,
+      ts: `import { thompsonSampling } from '@statlab/core';\nconst res = thompsonSampling(armsData);`,
+    },
+    useCases: [
+      'Dynamic ad creative routing and conversion rate optimization with minimal traffic waste.',
+      'Adaptive Clinical Trial allocation to superior treatment arms while maintaining statistical validity.'
+    ],
+    when: 'Use for continuous online learning and adaptive traffic allocation to minimize cumulative regret during testing.',
+    cautions: [
+      'Delayed reward feedback requires batch posterior updating.',
+      'Ensure prior Beta(α_0, β_0) parameters accurately reflect baseline domain expectations.'
+    ],
+    workbenchId: 'bandit_thompson_sampling',
+  },
+  {
+    slug: 'multi-arm-bandit-ucb1',
+    title: 'Multi-Armed Bandit Upper Confidence Bound (UCB1) calculator',
+    family: 'Information theory & machine learning',
+    description: 'Calculate deterministic UCB1 confidence bounds Q_k + c √(ln N / N_k) and regret bounds for multi-armed decision systems.',
+    keywords: ['UCB1 calculator', 'Upper Confidence Bound bandit', 'multi armed bandit UCB1', 'optimism in face of uncertainty', 'UCB regret bound'],
+    inputs: ['Total horizon steps N', 'Pull counts N_k per arm', 'Empirical mean reward Q_k', 'Exploration factor c (default √2)'],
+    example: { a: ['Total pulls N = 500', 'Arm A: N_A = 200, Q_A = 0.42', 'Arm B: N_B = 300, Q_B = 0.48'], result: 'UCB Bounds: Arm A = 0.42 + 0.176 = 0.596; Arm B = 0.48 + 0.144 = 0.624. Select Arm B.' },
+    formula: 'UCB1_k = Q̄_k + c * √( (2 ln N) / N_k ); Regret Bound = O(K ln N / Δ)',
+    code: {
+      python: `import numpy as np\nucb_scores = [q + np.sqrt((2 * np.log(N)) / n_k) for q, n_k in zip(Q, N_k)]\nchosen = np.argmax(ucb_scores)`,
+      r: `ucb_scores <- Q + sqrt((2 * log(N)) / N_k)\nchosen <- which.max(ucb_scores)`,
+      ts: `import { ucb1Bandit } from '@statlab/core';\nconst res = ucb1Bandit(Q, N_k, N);`,
+    },
+    useCases: [
+      'Determining web service API routing decisions with deterministic worst-case logarithmic regret guarantees.',
+      'Recommendation engine candidate ranking under bounded reward assumptions.'
+    ],
+    when: 'Use when deterministic policy bounds with logarithmic regret guarantees are preferred over randomized sampling.',
+    cautions: [
+      'Assumes rewards are bounded within [0, 1]. Rescale un-bounded continuous rewards accordingly.',
+      'Requires initializing each arm once at startup (N_k ≥ 1 for all k).'
+    ],
+    workbenchId: 'bandit_ucb1',
+  },
+  // --- CONFORMAL PREDICTION & CALIBRATION ---
+  {
+    slug: 'conformal-quantile-regression-cqr',
+    title: 'Conformal Quantile Regression (CQR) coverage calculator',
+    family: 'AI / ML evaluation & mixture models',
+    description: 'Calculate distribution-free prediction intervals [q̂_{α/2}(x) - E_k, q̂_{1-α/2}(x) + E_k] with exact marginal coverage 1 - α using Conformal Quantile Regression.',
+    keywords: ['CQR calculator', 'Conformal Quantile Regression', 'conformal prediction interval', 'guaranteed coverage 1-alpha', 'distribution free interval'],
+    inputs: ['Calibration set features X_cal', 'Calibration true outcomes Y_cal', 'Lower quantile model q̂_{lower}', 'Upper quantile model q̂_{upper}', 'Target miscoverage α'],
+    example: { a: ['Calibration size N_cal = 500', 'Target α = 0.10 (90% coverage)', 'Pinball loss quantiles: 5% & 95%'], result: 'Conformal conformity score quantile E_k = 1.24. Empirical Test Coverage = 90.4% (Guaranteed ≥ 90%).' },
+    formula: 'E_i = max( q̂_{lower}(x_i) - y_i, y_i - q̂_{upper}(x_i) ); Q_{1-α} = Quantile(E_{1:n}, ⌈(n+1)(1-α)⌉ / n)',
+    code: {
+      python: `from mapie.quantile_regression import MapieQuantileRegressor\nmapie = MapieQuantileRegressor(estimator=base_qr_model, alpha=0.10)\nmapie.fit(X_train, y_train)\ny_pred, y_pis = mapie.predict(X_test)`,
+      r: `library(conformalInference)\n# Execute conformal quantile regression calibration step`,
+      ts: `import { conformalQuantileRegression } from '@statlab/core';\nconst res = conformalQuantileRegression(qLower, qUpper, yCal, { alpha: 0.10 });`,
+    },
+    useCases: [
+      'Generating reliable, non-parametric prediction intervals for real-time electric grid load forecasting.',
+      'Equipping ML regression API endpoints with finite-sample 95% confidence bounds.'
+    ],
+    when: 'Use when regression model prediction intervals require rigorous distribution-free 1 - α coverage guarantees.',
+    cautions: [
+      'Requires exchangeability of calibration and test data points.',
+      'Conformal intervals adapt their width heteroscedastically to local uncertainty when built on underlying quantile regressors.'
+    ],
+    workbenchId: 'conformal_cqr',
+  },
+  {
+    slug: 'venn-abers-predictor-calibration',
+    title: 'Venn-Abers Predictor multi-class calibration interval calculator',
+    family: 'AI / ML evaluation & mixture models',
+    description: 'Calculate multiprobability calibrated prediction bounds (p_0, p_1) for binary classification models using isotonic Venn-Abers calibration.',
+    keywords: ['Venn Abers calculator', 'Venn Abers predictor', 'calibrated probability bounds', 'isotonic calibration Venn Abers', 'valid classification probability'],
+    inputs: ['Calibration scores s_i', 'Calibration labels y_i ∈ {0,1}', 'Test object score s_test'],
+    example: { a: ['Calibration N = 300', 'Test score s_test = 0.78'], result: 'Venn-Abers Calibrated Interval: p_0 = 0.724, p_1 = 0.761 (Interval width = 0.037, Regularized point prob = 0.742).' },
+    formula: 'p_0 = g_{(s_{test}, 0)}(s_{test}); p_1 = g_{(s_{test}, 1)}(s_{test}); g = \\text{Isotonic Regression on } (S \\cup s_{test}, Y \\cup y)',
+    code: {
+      python: `from venn_abers import VennAbersCalibrator\nva = VennAbersCalibrator()\nva.fit(cal_scores, cal_labels)\np_0, p_1 = va.predict_proba(test_scores)`,
+      r: `library(VennAbers)\n# Execute Venn-Abers isotonic probability calibration`,
+      ts: `import { vennAbersPredictor } from '@statlab/core';\nconst res = vennAbersPredictor(calScores, calLabels, testScore);`,
+    },
+    useCases: [
+      'Calibrating medical diagnosis classifier risk probabilities with well-founded interval uncertainty.',
+      'High-stakes fraud detection classification scoring requiring reliable probability bounds.'
+    ],
+    when: 'Use when binary classification probability outputs require non-parametric isotonic calibration guarantees.',
+    cautions: [
+      'Venn-Abers yields an interval (p_0, p_1) rather than a single point probability; the interval width indicates local calibration uncertainty.',
+      'Computational complexity is O(N log N) per test sample.'
+    ],
+    workbenchId: 'venn_abers_calibrator',
+  },
+  // --- MULTIVARIATE & MATRIX DISTRIBUTIONS ---
+  {
+    slug: 'multivariate-t-distribution-cdf',
+    title: "Multivariate Student's t distribution joint probability calculator",
+    family: 'Probability distributions & dimensionality reduction',
+    description: "Calculate joint cumulative probabilities P(X ≤ x) and hyper-rectangular integrals for Multivariate Student's t distribution with degrees of freedom ν.",
+    keywords: ['Multivariate t distribution calculator', 'multivariate t CDF', 'heavy tailed multivariate probability', 'degrees of freedom nu multivariate', 'mvtnorm t distribution'],
+    inputs: ['Dimension d', 'Degrees of freedom ν', 'Mean vector μ', 'Scale / Covariance matrix Σ', 'Upper integration bounds x'],
+    example: { a: ['Dimension d = 3', 'Degrees of freedom ν = 5', 'Covariance ρ = 0.40', 'Upper bounds x = [1.5, 1.5, 1.5]'], result: 'Joint Multivariate t CDF P(X₁≤1.5, X₂≤1.5, X₃≤1.5) = 0.8412 (Standard error = 0.0004).' },
+    formula: 'f(x) = [ Γ((ν+d)/2) / (Γ(ν/2) (ν π)^{d/2} |Σ|^{1/2}) ] * [ 1 + (1/ν) (x-μ)ᵀ Σ⁻¹ (x-μ) ]^{-(ν+d)/2}',
+    code: {
+      python: `from scipy.stats import multivariate_t\nrv = multivariate_t(df=5, loc=[0,0,0], shape=Sigma)\nprob = rv.cdf([1.5, 1.5, 1.5])`,
+      r: `library(mvtnorm)\npmvt(lower = -Inf, upper = c(1.5, 1.5, 1.5), df = 5, sigma = Sigma)`,
+      ts: `import { mvtCDF } from '@statlab/core';\nconst res = mvtCDF([1.5, 1.5, 1.5], { df: 5, sigma: Sigma });`,
+    },
+    useCases: [
+      'Calculating joint portfolio default probabilities under heavy-tailed market asset returns.',
+      'Evaluating spatial extreme event joint exceedance probabilities with fat-tailed marginals.'
+    ],
+    when: "Use when multivariate data displays joint heavy tails and spatial dependence incompatible with multivariate normality.",
+    cautions: [
+      'High-dimensional multivariate t integration (d > 5) relies on Quasi-Monte Carlo numerical integration (Genz & Bretz algorithm).',
+      'Degrees of freedom ν must exceed 2 for finite covariance matrix definition.'
+    ],
+    workbenchId: 'dist_mvt_cdf',
+  },
+  {
+    slug: 'matrix-variate-normal-distribution',
+    title: 'Matrix-Variate Normal Distribution Kronecker covariance calculator',
+    family: 'Probability distributions & dimensionality reduction',
+    description: 'Calculate probability density f(X), matrix mean E[X]=M, and row/column covariance matrices U (n×n) and V (p×p) for Matrix-Variate Normal distribution MN_{n,p}(M, U, V).',
+    keywords: ['Matrix Variate Normal calculator', 'Matrix Normal distribution', 'Kronecker covariance matrix', 'matrix variate density', 'row column covariance'],
+    inputs: ['Matrix dimensions n×p', 'Mean matrix M (n×p)', 'Row covariance U (n×n)', 'Column covariance V (p×p)', 'Sample matrix X (n×p)'],
+    example: { a: ['Dimensions 4×3', 'Row cov U (4×4 spatial)', 'Column cov V (3×3 temporal)'], result: 'Log-Likelihood Log-L(X) = -18.42. Kronecker Covariance vec(X) ~ N_{12}(vec(M), V ⊗ U).' },
+    formula: 'f(X) = [ (2π)^{np/2} |U|^{p/2} |V|^{n/2} ]⁻¹ exp( -1/2 tr[ U⁻¹ (X-M) V⁻¹ (X-M)ᵀ ] )',
+    code: {
+      python: `from scipy.stats import matrix_normal\nrv = matrix_normal(mean=M, rowcov=U, colcov=V)\nlog_pdf = rv.logpdf(X)`,
+      r: `library(MixMatrix)\ndmatnorm(X, mean = M, U = U, V = V, log = TRUE)`,
+      ts: `import { matrixNormalPdf } from '@statlab/core';\nconst res = matrixNormalPdf(X, M, U, V);`,
+    },
+    useCases: [
+      'Modeling multi-channel electroencephalography (EEG) spatiotemporal sensor arrays.',
+      'Spatio-temporal panel econometric modeling where observations are structured as matrix grids.'
+    ],
+    when: 'Use when random variables are structured as n × p matrices with distinct row (spatial) and column (temporal) correlation structures.',
+    cautions: [
+      'Kronecker structure V ⊗ U assumes separability between row and column covariances.',
+      'Both U and V must be symmetric positive-definite matrices.'
+    ],
+    workbenchId: 'dist_matrix_normal',
+  },
+  {
+    slug: 'skew-t-distribution-azzalini',
+    title: 'Azzalini Skew-t Distribution asymmetric heavy-tailed calculator',
+    family: 'Continuous probability distributions',
+    description: 'Calculate PDF, CDF, quantiles, and asymmetry parameter α, degrees of freedom ν for Azzalini Skew-t distribution ST(ξ, ω, α, ν).',
+    keywords: ['Skew t distribution calculator', 'Azzalini skew t', 'asymmetric heavy tailed distribution', 'skewness alpha degrees of freedom nu', 'sn skew t R'],
+    inputs: ['Location ξ', 'Scale ω', 'Shape / Skewness α', 'Degrees of freedom ν', 'Evaluation point x or probability p'],
+    example: { a: ['ξ = 0, ω = 1', 'Skewness α = 3.0', 'Degrees of freedom ν = 4', 'Evaluation x = 1.5'], result: 'Skew-t PDF f(1.5) = 0.184. CDF F(1.5) = 0.912. Quantile q(0.95) = 2.14.' },
+    formula: 'f(x) = (2 / ω) t_ν(y) T_{ν+1}( α y √((ν+1)/(ν + y²)) ), where y = (x - ξ)/ω',
+    code: {
+      python: `from scipy.stats import skewt\n# Or using statsmodels / skewt library\nimport skewt\npdf = skewt.pdf(1.5, df=4, gamma=3.0)`,
+      r: `library(sn)\ndst(1.5, dp = c(location = 0, scale = 1, alpha = 3, nu = 4))`,
+      ts: `import { skewTDist } from '@statlab/core';\nconst res = skewTDist.cdf(1.5, { location: 0, scale: 1, alpha: 3, nu: 4 });`,
+    },
+    useCases: [
+      'Financial risk management modeling asymmetric return innovation tails during market panics.',
+      'Modeling skewed environmental pollution concentrations with non-zero background baseline.'
+    ],
+    when: 'Use when continuous data displays simultaneous asymmetry (skewness α) and heavy tail behavior (degrees of freedom ν).',
+    cautions: [
+      'As ν → ∞, the Azzalini Skew-t converges to the Skew-Normal distribution.',
+      'Parameter estimation via MLE can exhibit flat profile likelihood surfaces near α = 0.'
+    ],
+    workbenchId: 'dist_skew_t',
+  },
+  // --- ADVANCED GLM & FUNCTIONAL / WAVELET ---
+  {
+    slug: 'zero-inflated-beta-regression-zibr',
+    title: 'Zero-Inflated Beta Regression (ZIBR) proportion calculator',
+    family: 'Generalized linear & additive models (GLM/GAM)',
+    description: 'Calculate two-part mixture parameters for continuous proportion outcomes in [0, 1) with excess zero structural inflation.',
+    keywords: ['ZIBR calculator', 'Zero Inflated Beta Regression', 'proportion outcome regression', 'zoib R package', 'two part beta model'],
+    inputs: ['Outcome vector Y ∈ [0, 1)', 'Zero-inflation covariates Z', 'Beta mean covariates X', 'Precision parameter φ'],
+    example: { a: ['Proportion Y (22% structural zeros)', 'Zero-inflation odds ratio OR = 2.14', 'Beta mean slope β_1 = 0.45'], result: 'Zero Logistic Prob P(Y=0) = 0.22. Conditional Beta Mean E[Y|Y>0] = 0.38 (Precision φ = 14.2).' },
+    formula: 'P(Y = 0) = π = 1 / (1 + exp(-Z γ)); f(y | Y > 0) = [ y^{a-1} (1-y)^{b-1} ] / B(a, b), a = μ φ, b = (1-μ) φ',
+    code: {
+      python: `import statsmodels.api as sm\n# Fit two-stage zero-inflated model (Logit for zeros + Beta regression for (0,1))`,
+      r: `library(zoib)\nfit <- zoib(y ~ x1 | 1 | z1, data = df, joint = FALSE)`,
+      ts: `import { zeroInflatedBeta } from '@statlab/core';\nconst res = zeroInflatedBeta(Y, X, Z);`,
+    },
+    useCases: [
+      'Modeling percentage of daily server downtime where many days exhibit strictly zero outages.',
+      'Analyzing customer refund rate proportions containing structural zero non-refund cohorts.'
+    ],
+    when: 'Use for continuous proportion outcomes bounded in [0, 1) with structural excess zero values.',
+    cautions: [
+      'Strictly positive values y ∈ (0, 1) follow Beta distribution; if 1.0 values also exist, use Zero-and-One Inflated Beta (ZOIB).',
+      'Verify convergence of precision parameter φ estimation.'
+    ],
+    workbenchId: 'glm_zibr',
+  },
+  {
+    slug: 'functional-data-analysis-fda-curve-registration',
+    title: 'FDA Landmark Curve Registration & alignment calculator',
+    family: 'Functional data analysis (FDA)',
+    description: 'Align functional curve phase variation and structural landmarks using non-linear time-warping h(t) transformations.',
+    keywords: ['FDA curve registration calculator', 'functional landmark registration', 'phase amplitude variation FDA', 'fda R curve alignment', 'time warping registration'],
+    inputs: ['Unregistered functional curves x_i(t)', 'Landmark locations t_{i,k}', 'Target landmark locations t_{0,k}', 'Warping smooth penalty λ'],
+    example: { a: ['N = 25 curves', '3 peak landmarks per curve', 'Landmark alignment target t_0 = [0.25, 0.50, 0.75]'], result: 'Phase Variance Reduced by 88.4%. Amplitude Mean Curve peak height preserved without artificial smoothing attenuation.' },
+    formula: 'x_{i,registered}(t) = x_i( h_i(t) ), where h_i(t) = ∫_0^t exp( w_i(u) ) du / ∫_0^T exp( w_i(u) ) du',
+    code: {
+      python: `import fda_py\n# Or scikit-fda curve registration\nfrom skfda.preprocessing.registration import LandmarkRegistration\nreg = LandmarkRegistration(landmarks)\nregistered_curves = reg.fit_transform(fd)`,
+      r: `library(fda)\nlandmark_reg <- landmarkreg(fd_obj, xkm, x0k)\nplot(landmark_reg$regfd)`,
+      ts: `import { fdaLandmarkRegistration } from '@statlab/core';\nconst res = fdaLandmarkRegistration(curves, landmarks);`,
+    },
+    useCases: [
+      'Aligning ECG heartbeat waveforms across patients to compare peak amplitude without phase timing distortion.',
+      'Synchronizing industrial machine operational cycle sensor telemetry curves prior to anomaly detection.'
+    ],
+    when: 'Use when functional curves exhibit phase variation (timing differences of peaks/troughs across curves).',
+    cautions: [
+      'Do not average unregistered curves directly; doing so attenuates sharp peak amplitudes (amplitude distortion).',
+      'Ensure landmark points represent identical structural events across all curves.'
+    ],
+    workbenchId: 'fda_landmark_registration',
+  },
+  {
+    slug: 'wavelet-packet-transform-wpt',
+    title: 'Wavelet Packet Transform (WPT) best-basis entropy calculator',
+    family: 'Signal processing & wavelet analysis',
+    description: 'Calculate full binary tree Wavelet Packet decomposition, subband energy distribution, and Coifman-Wickerhauser best-basis entropy minimization.',
+    keywords: ['WPT calculator', 'Wavelet Packet Transform', 'best basis entropy Coifman', 'wavelet subband decomposition', 'signal WPT tree'],
+    inputs: ['Signal vector x of length 2^J', 'Mother wavelet filter (e.g. db4, sym8)', 'Decomposition level J', 'Entropy metric (Shannon / Log energy)'],
+    example: { a: ['Signal length N = 1024', 'Wavelet: Daubechies 4 (db4)', 'Level J = 4 (16 subbands)'], result: 'Best-Basis Tree Selected: Subbands [4,0], [4,1], [3,1], [2,1]. Shannon Entropy = 3.41 (38% lower than standard DWT).' },
+    formula: 'W_{2n}(t) = √2 ∑ h(k) W_n(2t-k); W_{2n+1}(t) = √2 ∑ g(k) W_n(2t-k); E(s) = -∑ p_i ln p_i',
+    code: {
+      python: `import pywt\nwp = pywt.WaveletPacket(data=signal, wavelet='db4', mode='symmetric', maxlevel=4)\nbest_tree = wp.get_level(4, order='freq')`,
+      r: `library(waveslim)\nwpt_tree <- dwpt(signal, wf = "haar", n.levels = 4)\nbest_basis <- best.basis(wpt_tree)`,
+      ts: `import { waveletPacketTransform } from '@statlab/core';\nconst res = waveletPacketTransform(signal, { wavelet: 'db4', level: 4 });`,
+    },
+    useCases: [
+      'High-frequency vibration acoustic signal subband feature extraction for predictive equipment maintenance.',
+      'Audio and acoustic signal compression using optimal best-basis entropy tree selection.'
+    ],
+    when: 'Use when fine frequency resolution is required at high frequencies where standard Discrete Wavelet Transform (DWT) only decomposes low-frequency approximation subbands.',
+    cautions: [
+      'Signal length N must ideally be a power of 2 (2^J).',
+      'Check boundary extension mode (periodic / symmetric) to avoid edge artifact distortion.'
+    ],
+    workbenchId: 'signal_wpt',
+  },
+  {
+    slug: 'graph-neural-network-over-smoothing-dirichlet',
+    title: 'GNN Dirichlet Energy over-smoothing diagnostic calculator',
+    family: 'Network analysis & graph metrics',
+    description: 'Calculate node representation Dirichlet energy E(H) = tr(Hᵀ L H) across GNN layer depth L to diagnose feature over-smoothing.',
+    keywords: ['GNN over smoothing calculator', 'Dirichlet energy GNN', 'graph neural network diagnostic', 'node embedding collapse', 'normalized graph Laplacian L'],
+    inputs: ['Adjacency matrix A', 'Node feature matrix H (N×d)', 'Number of GNN layers L', 'Normalized Laplacian specification'],
+    example: { a: ['Graph N = 500 nodes', 'Embedding dim d = 64', 'GNN depth L = 8 layers'], result: 'Dirichlet Energy E(H_8) = 0.0014 (Over-smoothing detected at Layer 5: E(H) dropped > 95%). Recommendation: Add residual skip-connections or DropEdge.' },
+    formula: 'E(H) = (1/2) tr( Hᵀ L_sym H ) = (1/2) ∑_{(i,j)∈E} || H_i / √d_i - H_j / √d_j ||²',
+    code: {
+      python: `import torch\nimport torch_geometric\n# Calculate normalized graph Laplacian L_sym and Dirichlet energy\nL_sym = torch_geometric.utils.get_laplacian(edge_index, normalization='sym')\ndirichlet_energy = torch.trace(H.T @ L_sym @ H) / (2 * N)`,
+      r: `library(igraph)\n# Compute normalized graph Laplacian and trace energy for node embeddings`,
+      ts: `import { gnnDirichletEnergy } from '@statlab/core';\nconst res = gnnDirichletEnergy(adjMatrix, nodeEmbeddings);`,
+    },
+    useCases: [
+      'Diagnosing performance degradation in deep Graph Convolutional Networks (GCN) as layer count increases.',
+      'Optimizing layer depth and skip-connection topology in large-scale social graph embeddings.'
+    ],
+    when: 'Use when building deep Graph Neural Networks (L > 4 layers) to detect when node representations collapse into uniform vectors.',
+    cautions: [
+      'Dirichlet energy approaching zero indicates complete node feature homogenization (over-smoothing).',
+      'Use edge dropout (DropEdge), PairNorm, or Initial Residual connections (GCNII) to maintain Dirichlet energy across deep layers.'
+    ],
+    workbenchId: 'graph_gnn_dirichlet',
+  },
 ];
 
 const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));

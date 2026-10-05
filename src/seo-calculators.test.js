@@ -365,8 +365,26 @@ describe('SEO calculator pages', () => {
       'extended-kalman-filter-ekf-nonlinear',
       'unscented-kalman-filter-ukf-sigma-points',
       'particle-filter-sequential-monte-carlo-smc',
+      'synthetic-control-augsynth',
+      'difference-in-differences-staggered-did',
+      'heterogeneous-treatment-effect-causal-forest',
+      'regression-discontinuity-fuzzy-rdd',
+      'spatial-error-model-sem-maximum-likelihood',
+      'spatial-durbin-model-sdm',
+      'spatiotemporal-point-process-hawkes',
+      'multi-arm-bandit-thompson-sampling',
+      'multi-arm-bandit-ucb1',
+      'conformal-quantile-regression-cqr',
+      'venn-abers-predictor-calibration',
+      'multivariate-t-distribution-cdf',
+      'matrix-variate-normal-distribution',
+      'skew-t-distribution-azzalini',
+      'zero-inflated-beta-regression-zibr',
+      'functional-data-analysis-fda-curve-registration',
+      'wavelet-packet-transform-wpt',
+      'graph-neural-network-over-smoothing-dirichlet',
     ]);
-    expect(calculatorPages.length).toBe(358);
+    expect(calculatorPages.length).toBe(376);
   });
 
   it('renders static HTML with canonical metadata, math formulas, code snippets, JSON-LD, and open CTAs', () => {
