@@ -9618,6 +9618,16 @@ export function renderCalculatorPage(page) {
     },
     {
       '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'StatLab', item: ORIGIN },
+        { '@type': 'ListItem', position: 2, name: 'Calculators', item: `${ORIGIN}/calculators/` },
+        { '@type': 'ListItem', position: 3, name: category.title, item: `${ORIGIN}/calculators/${category.slug}/` },
+        { '@type': 'ListItem', position: 4, name: page.title, item: url }
+      ]
+    },
+    {
+      '@context': 'https://schema.org',
       '@type': 'HowTo',
       name: `How to calculate ${page.title.replace(' calculator', '')}`,
       description: `Step-by-step guide for performing ${page.title} in code and browser workbenches.`,
@@ -9668,7 +9678,7 @@ export function renderCalculatorPage(page) {
   <meta name="twitter:description" content="${esc(page.description)}">
   <script type="application/ld+json">${JSON.stringify(schema).replace(/</g, '\\u003c')}</script>
   <style>
-    :root{color-scheme:dark;--bg:#080b10;--panel:#111722;--panel2:#0d121b;--text:#edf4ff;--muted:#9db0c7;--accent:#5df2b6;--accent2:#38bdf8;--line:#243246;--gold:#ffd166;--code-bg:#071018}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top left,#152033 0,#080b10 42rem);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.55}.wrap{max-width:1120px;margin:0 auto;padding:28px 20px 64px}a{color:var(--accent)}.nav{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:32px}.brand{font-weight:900;letter-spacing:.08em;text-decoration:none;color:var(--text);font-size:20px}.brand span{color:var(--accent)}.hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:28px;align-items:start}.eyebrow{color:var(--accent);font-size:13px;text-transform:uppercase;letter-spacing:.16em;font-weight:800}h1{font-size:clamp(36px,6vw,68px);line-height:.95;margin:12px 0 18px;letter-spacing:-.04em}p.lede{font-size:19px;color:#c9d7e8;max-width:720px;line-height:1.45}.panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 20px 80px rgba(0,0,0,.28)}.button{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:13px 20px;background:var(--accent);color:#06100c;text-decoration:none;font-weight:900;margin:8px 10px 8px 0;transition:transform .15s ease}.button:hover{transform:translateY(-1px)}.button.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:28px}.card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:18px;padding:22px}.card h2,.card h3{margin-top:0;font-size:20px;color:var(--text)}.card.full{grid-column:1 / -1}.card.accent-card{background:linear-gradient(135deg,rgba(93,242,182,.05) 0%,rgba(56,189,248,.05) 100%);border-color:rgba(93,242,182,.25)}.muted{color:var(--muted)}code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}pre{background:var(--code-bg);border:1px solid #1b2a3d;border-radius:14px;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.45;color:#e2e8f0}.example{background:var(--code-bg);border:1px solid #1b2a3d;border-radius:16px;padding:16px;margin-top:14px}.list{padding-left:20px;margin:10px 0}.list li{margin-bottom:6px}.cta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:12px}.cta-box{background:rgba(17,23,34,.9);border:1px solid var(--line);border-radius:14px;padding:16px}.cta-box h4{margin:0 0 6px;color:var(--accent);font-size:16px}.cta-box.assurance h4{color:var(--accent2)}.footer{border-top:1px solid var(--line);margin-top:48px;padding-top:24px;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}@media(max-width:860px){.hero,.grid,.cta-grid{grid-template-columns:1fr}.nav{align-items:flex-start;flex-direction:column}h1{font-size:40px}}
+    :root{color-scheme:dark;--bg:#080b10;--panel:#111722;--panel2:#0d121b;--text:#edf4ff;--muted:#9db0c7;--accent:#5df2b6;--accent2:#38bdf8;--line:#243246;--gold:#ffd166;--code-bg:#071018}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top left,#152033 0,#080b10 42rem);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.55}.wrap{max-width:1120px;margin:0 auto;padding:28px 20px 64px}a{color:var(--accent)}.nav{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:24px}.brand{font-weight:900;letter-spacing:.08em;text-decoration:none;color:var(--text);font-size:20px}.brand span{color:var(--accent)}.crumbs{font-size:13px;color:var(--muted);margin-bottom:24px}.crumbs a{color:var(--muted);text-decoration:none}.crumbs a:hover{color:var(--accent)}.hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:28px;align-items:start}.eyebrow{color:var(--accent);font-size:13px;text-transform:uppercase;letter-spacing:.16em;font-weight:800}h1{font-size:clamp(36px,6vw,68px);line-height:.95;margin:12px 0 18px;letter-spacing:-.04em}p.lede{font-size:19px;color:#c9d7e8;max-width:720px;line-height:1.45}.panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 20px 80px rgba(0,0,0,.28)}.button{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:13px 20px;background:var(--accent);color:#06100c;text-decoration:none;font-weight:900;margin:8px 10px 8px 0;transition:transform .15s ease;cursor:pointer;border:none}.button:hover{transform:translateY(-1px)}.button.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:28px}.card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:18px;padding:22px}.card h2,.card h3{margin-top:0;font-size:20px;color:var(--text)}.card.full{grid-column:1 / -1}.card.accent-card{background:linear-gradient(135deg,rgba(93,242,182,.05) 0%,rgba(56,189,248,.05) 100%);border-color:rgba(93,242,182,.25)}.muted{color:var(--muted)}code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}pre{background:var(--code-bg);border:1px solid #1b2a3d;border-radius:14px;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.45;color:#e2e8f0}.example{background:var(--code-bg);border:1px solid #1b2a3d;border-radius:16px;padding:16px;margin-top:14px}.list{padding-left:20px;margin:10px 0}.list li{margin-bottom:6px}.cta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:12px}.cta-box{background:rgba(17,23,34,.9);border:1px solid var(--line);border-radius:14px;padding:16px}.cta-box h4{margin:0 0 6px;color:var(--accent);font-size:16px}.cta-box.assurance h4{color:var(--accent2)}.footer{border-top:1px solid var(--line);margin-top:48px;padding-top:24px;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}@media(max-width:860px){.hero,.grid,.cta-grid{grid-template-columns:1fr}.nav{align-items:flex-start;flex-direction:column}h1{font-size:40px}}
   </style>
 </head>
 <body>
@@ -9682,13 +9692,16 @@ export function renderCalculatorPage(page) {
         <a href="https://www.npmjs.com/package/@statlab/core">@statlab/core</a>
       </div>
     </nav>
+    <div class="crumbs" aria-label="Breadcrumbs">
+      <a href="/">StatLab</a> / <a href="/calculators/">Calculators</a> / <a href="/calculators/${category.slug}/">${esc(category.title)}</a> / <span>${esc(page.title)}</span>
+    </div>
     <section class="hero">
       <div>
         <div class="eyebrow">${esc(page.family)} calculator</div>
         <h1>${esc(page.title)}</h1>
         <p class="lede">${esc(page.description)}</p>
         <a class="button" href="/?launch=1&test=${encodeURIComponent(page.workbenchId)}#workbench">Run this test live in StatLab</a>
-        <a class="button secondary" href="https://www.npmjs.com/package/@statlab/core">npm i @statlab/core</a>
+        <button id="copy-btn" class="button secondary" type="button">Copy Calculator Link</button>
       </div>
       <aside class="panel">
         <h2>Worked Example</h2>
@@ -9770,6 +9783,19 @@ export function renderCalculatorPage(page) {
       <div>Feeds into <a href="/?launch=1#workbench">production telemetry</a> &amp; <a href="https://www.npmjs.com/package/@statlab/core">CI/CD pipeline benchmarks</a>.</div>
     </footer>
   </main>
+  <script>
+    (function() {
+      const btn = document.getElementById('copy-btn');
+      if (btn) {
+        btn.addEventListener('click', function() {
+          navigator.clipboard.writeText(window.location.href).then(function() {
+            btn.textContent = 'Copied!';
+            setTimeout(function() { btn.textContent = 'Copy Calculator Link'; }, 2000);
+          });
+        });
+      }
+    })();
+  </script>
 </body>
 </html>`;
 }
@@ -9794,6 +9820,25 @@ export function renderCategoryPage(category, catPages) {
     keywords: (p.keywords || []).join(' '),
   })));
 
+  const schema = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'StatLab', item: ORIGIN },
+        { '@type': 'ListItem', position: 2, name: 'Calculators', item: `${ORIGIN}/calculators/` },
+        { '@type': 'ListItem', position: 3, name: category.title, item: `${ORIGIN}/calculators/${category.slug}/` }
+      ]
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: `${category.title} Calculators`,
+      description: category.description,
+      url: `${ORIGIN}/calculators/${category.slug}/`
+    }
+  ];
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -9810,6 +9855,7 @@ export function renderCategoryPage(category, catPages) {
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="${esc(category.title)} Calculators | StatLab">
   <meta name="twitter:description" content="Explore ${catPages.length} static, shareable ${esc(category.title)} calculators: ${esc(category.description)}">
+  <script type="application/ld+json">${JSON.stringify(schema).replace(/</g, '\\u003c')}</script>
   <style>
     body{margin:0;background:#080b10;color:#edf4ff;font-family:Inter,ui-sans-serif,system-ui,sans-serif;line-height:1.5}.wrap{max-width:1120px;margin:auto;padding:40px 20px}a{color:#5df2b6}.brand{font-weight:900;letter-spacing:.08em;text-decoration:none;color:#edf4ff;font-size:20px}.brand span{color:#5df2b6}.crumbs{font-size:13px;color:#9db0c7;margin-bottom:16px}.crumbs a{color:#9db0c7;text-decoration:none}.crumbs a:hover{color:#5df2b6}h1{font-size:clamp(32px,5vw,56px);line-height:1.05;margin:8px 0 12px;letter-spacing:-.03em}.eyebrow{color:#5df2b6;font-size:12px;text-transform:uppercase;letter-spacing:.14em;font-weight:800}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:24px}.card{display:block;text-decoration:none;color:#edf4ff;background:#111722;border:1px solid #243246;border-radius:18px;padding:20px;transition:border-color .15s ease}.card:hover{border-color:#5df2b6}.banner{background:linear-gradient(135deg,#111722 0%,#0d1420 100%);border:1px solid #243246;border-radius:20px;padding:24px;margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:760px){.grid,.banner{grid-template-columns:1fr}}
   </style>
@@ -9861,8 +9907,11 @@ export function renderCategoryPage(category, catPages) {
       const grid = document.getElementById('cat-grid');
       const count = document.getElementById('cat-count');
 
-      input.addEventListener('input', function(e) {
-        const q = e.target.value.trim().toLowerCase();
+      function applyFilter(q, updateUrl) {
+        if (updateUrl && history.replaceState) {
+          const newUrl = window.location.pathname + (q ? '?q=' + encodeURIComponent(q) : '');
+          history.replaceState(null, '', newUrl);
+        }
         if (!q) {
           count.textContent = '';
           grid.innerHTML = catData.map(function(c) {
@@ -9894,7 +9943,18 @@ export function renderCategoryPage(category, catPages) {
             '</a>';
           }).join('');
         }
+      }
+
+      input.addEventListener('input', function(e) {
+        applyFilter(e.target.value.trim().toLowerCase(), true);
       });
+
+      const params = new URLSearchParams(window.location.search);
+      const initialQ = params.get('q');
+      if (initialQ) {
+        input.value = initialQ;
+        applyFilter(initialQ.trim().toLowerCase(), false);
+      }
     })();
   </script>
 </body>
@@ -9934,6 +9994,24 @@ export function renderCalculatorIndex() {
     keywords: (p.keywords || []).join(' '),
   })));
 
+  const schema = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'StatLab', item: ORIGIN },
+        { '@type': 'ListItem', position: 2, name: 'Calculators', item: `${ORIGIN}/calculators/` }
+      ]
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: 'StatLab Statistical Test Calculators',
+      description: 'Browse 376 free, shareable statistical test calculators classified by use case.',
+      url: `${ORIGIN}/calculators/`
+    }
+  ];
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -9950,6 +10028,7 @@ export function renderCalculatorIndex() {
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="StatLab Statistical Test Calculators | pSEO Directory">
   <meta name="twitter:description" content="Browse 376 free, shareable statistical test calculators classified by use case: hypothesis testing, causal inference, time series, AI/ML evaluation, survival, spatial statistics, SPC, and probability distributions.">
+  <script type="application/ld+json">${JSON.stringify(schema).replace(/</g, '\\u003c')}</script>
   <style>
     body{margin:0;background:#080b10;color:#edf4ff;font-family:Inter,ui-sans-serif,system-ui,sans-serif;line-height:1.5}.wrap{max-width:1120px;margin:auto;padding:40px 20px}a{color:#5df2b6}.brand{font-weight:900;letter-spacing:.08em;text-decoration:none;color:#edf4ff;font-size:20px}.brand span{color:#5df2b6}h1{font-size:clamp(36px,6vw,68px);line-height:.95;margin:16px 0 12px;letter-spacing:-.04em}.eyebrow{color:#5df2b6;font-size:12px;text-transform:uppercase;letter-spacing:.14em;font-weight:800}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:24px}.card{display:block;text-decoration:none;color:#edf4ff;background:#111722;border:1px solid #243246;border-radius:18px;padding:22px;transition:border-color .15s ease}.card:hover{border-color:#5df2b6}.cat-btn{display:inline-block;font-weight:700;font-size:13px;color:#5df2b6;text-decoration:none;padding:8px 14px;background:rgba(93,242,182,0.08);border:1px solid rgba(93,242,182,0.3);border-radius:6px}.banner{background:linear-gradient(135deg,#111722 0%,#0d1420 100%);border:1px solid #243246;border-radius:20px;padding:24px;margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:760px){.grid,.banner{grid-template-columns:1fr}}
   </style>
@@ -9999,8 +10078,11 @@ export function renderCalculatorIndex() {
       const categorySection = document.getElementById('category-section');
       const searchCount = document.getElementById('search-count');
 
-      input.addEventListener('input', function(e) {
-        const q = e.target.value.trim().toLowerCase();
+      function applySearch(q, updateUrl) {
+        if (updateUrl && history.replaceState) {
+          const newUrl = window.location.pathname + (q ? '?q=' + encodeURIComponent(q) : '');
+          history.replaceState(null, '', newUrl);
+        }
         if (!q) {
           searchResults.style.display = 'none';
           categorySection.style.display = 'block';
@@ -10029,7 +10111,18 @@ export function renderCalculatorIndex() {
             '</a>';
           }).join('');
         }
+      }
+
+      input.addEventListener('input', function(e) {
+        applySearch(e.target.value.trim().toLowerCase(), true);
       });
+
+      const params = new URLSearchParams(window.location.search);
+      const initialQ = params.get('q');
+      if (initialQ) {
+        input.value = initialQ;
+        applySearch(initialQ.trim().toLowerCase(), false);
+      }
     })();
   </script>
 </body>

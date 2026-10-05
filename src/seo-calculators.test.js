@@ -393,6 +393,9 @@ describe('SEO calculator pages', () => {
     expect(html).toContain('<title>Mann-Whitney U calculator | StatLab</title>');
     expect(html).toContain('<link rel="canonical" href="https://statlab.fyi/calculators/mann-whitney-u/">');
     expect(html).toContain('application/ld+json');
+    expect(html).toContain('BreadcrumbList');
+    expect(html).toContain('crumbs');
+    expect(html).toContain('Copy Calculator Link');
     expect(html).toContain('Run this test live in StatLab');
     expect(html).toContain('Python (SciPy / Statsmodels)');
     expect(html).toContain('TypeScript (@statlab/core)');
