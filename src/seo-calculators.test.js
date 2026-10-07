@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { calculatorPages, generateSeoCalculatorPages, renderCalculatorPage, renderSitemap } from '../scripts/generate-seo-calculators.mjs';
 
 describe('SEO calculator pages', () => {
-  it('declares the milestone 425 statistical calculator suite', () => {
+  it('declares the milestone 450 statistical calculator suite', () => {
     expect(calculatorPages.map((page) => page.slug)).toEqual([
       'welch-t-test',
       'student-t-test',
@@ -432,8 +432,33 @@ describe('SEO calculator pages', () => {
       'somers-d-xy-directional',
       'goodman-kruskal-tau',
       'lord-wingersky-algorithm-irt',
+      'poincare-hyperbolic-distance',
+      'hellinger-distance-probability',
+      'jensen-shannon-divergence-jsd',
+      'total-variation-distance-tvd',
+      'competing-risks-cumulative-incidence',
+      'restricted-mean-survival-time-rmst',
+      'mean-time-between-failures-mtbf-mttr',
+      'accelerated-failure-time-aft-model',
+      'besag-l-function-spatial-points',
+      'hawkes-process-intensity-calculator',
+      'spatial-lag-x-slx-regression',
+      'local-gearys-c-lisa',
+      'continuous-wavelet-transform-cwt',
+      'cross-wavelet-coherence',
+      'gnn-dirichlet-energy-oversmoothing',
+      'hilbert-transform-instantaneous-phase',
+      'differential-item-functioning-dif-mantel',
+      'mcdonalds-omega-hierarchical',
+      'conjoint-analysis-part-worth-utility',
+      'ewma-control-chart-spc',
+      'six-sigma-dpmo-calculator',
+      'gage-rr-anova-method',
+      'dunnett-post-hoc-test',
+      'two-way-repeated-measures-anova',
+      'equi-variance-bartlett-test',
     ]);
-    expect(calculatorPages.length).toBe(425);
+    expect(calculatorPages.length).toBe(450);
   });
 
   it('renders static HTML with canonical metadata, math formulas, code snippets, JSON-LD, and open CTAs', () => {

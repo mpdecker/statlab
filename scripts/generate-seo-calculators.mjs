@@ -10751,6 +10751,633 @@ export const calculatorPages = [
     ],
     workbenchId: 'lord_wingersky_irt',
   },
+
+  // --- 25 EXPANSION CALCULATORS (426 - 450) ---
+  {
+    slug: 'poincare-hyperbolic-distance',
+    title: 'Poincaré disk hyperbolic distance calculator',
+    family: 'Vector distances & embedding metrics',
+    description: 'Calculate hyperbolic distance d_H(u, v) in the Poincaré disk model for hierarchical LLM embeddings, taxonomy trees, and complex network graphs.',
+    keywords: ['Poincare distance calculator', 'hyperbolic distance embedding', 'Poincare disk metric', 'hierarchical vector distance', 'hyperbolic embedding distance'],
+    inputs: ['Vector u coordinates in unit disk (|u| < 1)', 'Vector v coordinates in unit disk (|v| < 1)'],
+    example: { a: ['u = [0.2, 0.3]', 'v = [0.5, -0.4]'], result: 'Poincaré Hyperbolic Distance d_H(u, v) = 1.624 (Measures non-Euclidean tree-like distance).' },
+    formula: 'd_H(u, v) = acosh( 1 + 2 * ||u - v||² / ( (1 - ||u||²)(1 - ||v||²) ) )',
+    code: {
+      python: `import numpy as np\ndef poincare_distance(u, v):\n    sq_dist = np.sum((u - v)**2)\n    u_norm = np.sum(u**2)\n    v_norm = np.sum(v**2)\n    arg = 1 + 2 * sq_dist / ((1 - u_norm) * (1 - v_norm))\n    return np.arccosh(arg)`,
+      r: `library(hyperbolic)\n# Compute Poincare disk hyperbolic distance`,
+      ts: `import { poincareDistance } from '@statlab/core';\nconst dist = poincareDistance([0.2, 0.3], [0.5, -0.4]);`,
+    },
+    useCases: [
+      'Measuring hierarchical taxonomy tree distance between word or concept embeddings in hyperbolic LLM vector spaces.',
+      'Analyzing structural graph distance in scale-free complex networks.'
+    ],
+    when: 'Use when vector representations live in a Poincaré disk or ball hyperbolic geometry suited for hierarchical structures.',
+    cautions: [
+      'Vectors must strictly reside inside unit disk (norm ||u|| < 1).',
+      'Distances expand exponentially as points approach boundary ||u|| → 1.'
+    ],
+    workbenchId: 'poincare_hyperbolic',
+  },
+  {
+    slug: 'hellinger-distance-probability',
+    title: 'Hellinger distance probability distribution calculator',
+    family: 'Vector distances & embedding metrics',
+    description: 'Calculate Hellinger distance H(P, Q) measuring similarity between discrete or continuous probability distributions.',
+    keywords: ['Hellinger distance calculator', 'Hellinger distribution metric', 'probability distance Hellinger', 'divergence metric Hellinger'],
+    inputs: ['Probability distribution P vector', 'Probability distribution Q vector'],
+    example: { a: ['P = [0.4, 0.3, 0.2, 0.1]', 'Q = [0.25, 0.25, 0.25, 0.25]'], result: 'Hellinger Distance H(P, Q) = 0.218 (Bounded metric: 0 ≤ H ≤ 1).' },
+    formula: 'H(P, Q) = (1/√2) * √( ∑ (√p_i - √q_i)² ) = √( 1 - ∑ √(p_i * q_i) )',
+    code: {
+      python: `import numpy as np\ndef hellinger_distance(p, q):\n    return np.sqrt(1 - np.sum(np.sqrt(p * q)))`,
+      r: `library(statip)\nhellinger(p, q)`,
+      ts: `import { hellingerDistance } from '@statlab/core';\nconst h = hellingerDistance([0.4, 0.3, 0.2, 0.1], [0.25, 0.25, 0.25, 0.25]);`,
+    },
+    useCases: [
+      'Measuring topic model probability distribution shifts between training and production text corpora.',
+      'Quantifying drift in probability distributions for anomaly detection.'
+    ],
+    when: 'Use when a symmetric, bounded (0 to 1) distance metric satisfying triangle inequality is required for probability distributions.',
+    cautions: [
+      'Ensure input arrays P and Q are valid normalized probability distributions summing to 1.0.',
+      'Related to Bhattacharyya coefficient BC: H = √(1 - BC).'
+    ],
+    workbenchId: 'hellinger_dist',
+  },
+  {
+    slug: 'jensen-shannon-divergence-jsd',
+    title: 'Jensen-Shannon Divergence (JSD) calculator',
+    family: 'Vector distances & embedding metrics',
+    description: 'Calculate Jensen-Shannon Divergence (JSD) and Jensen-Shannon Distance (√JSD) for symmetric probability distribution comparison.',
+    keywords: ['Jensen Shannon Divergence', 'JSD calculator', 'symmetric KL divergence', 'Jensen Shannon distance', 'distribution similarity JSD'],
+    inputs: ['Probability distribution P', 'Probability distribution Q', 'Logarithm base (base 2 or natural e)'],
+    example: { a: ['P = [0.5, 0.5]', 'Q = [0.9, 0.1]', 'Base 2'], result: 'JSD(P || Q) = 0.193 bits, JS Distance √JSD = 0.439.' },
+    formula: 'JSD(P || Q) = 1/2 KL(P || M) + 1/2 KL(Q || M),  where M = 1/2(P + Q)',
+    code: {
+      python: `from scipy.spatial.distance import jensenshannon\njs_dist = jensenshannon([0.5, 0.5], [0.9, 0.1], base=2)\njs_div = js_dist**2\nprint(f"JSD={js_div:.4f}, JS Distance={js_dist:.4f}")`,
+      r: `library(philentropy)\nJSD(rbind(p, q))`,
+      ts: `import { jensenShannonDivergence } from '@statlab/core';\nconst jsd = jensenShannonDivergence([0.5, 0.5], [0.9, 0.1]);`,
+    },
+    useCases: [
+      'Evaluating probability distribution alignment between candidate LLM responses.',
+      'Measuring dataset feature distribution shift in ML deployment pipelines.'
+    ],
+    when: 'Use when comparing probability distributions where symmetry and finite bounds (0 to 1 bit) are required (unlike asymmetrical unbounded KL divergence).',
+    cautions: [
+      'JS Distance √JSD is a true metric satisfying triangle inequality, whereas raw JSD divergence is not.',
+      'Input distributions must be non-negative and sum to 1.0.'
+    ],
+    workbenchId: 'jensen_shannon_div',
+  },
+  {
+    slug: 'total-variation-distance-tvd',
+    title: 'Total Variation Distance (TVD) calculator',
+    family: 'Vector distances & embedding metrics',
+    description: 'Calculate Total Variation Distance (TVD) measuring maximum difference in probability assigned to any event by two distributions P and Q.',
+    keywords: ['Total Variation Distance', 'TVD calculator', 'statistical distance TVD', 'L1 probability distance', 'distribution variation metric'],
+    inputs: ['Discrete probability distribution P', 'Discrete probability distribution Q'],
+    example: { a: ['P = [0.6, 0.3, 0.1]', 'Q = [0.2, 0.5, 0.3]'], result: 'Total Variation Distance TVD(P, Q) = 0.5 * (|0.4| + |-0.2| + |-0.2|) = 0.40.' },
+    formula: 'TVD(P, Q) = 1/2 ∑_x |P(x) - Q(x)| = max_A |P(A) - Q(A)|',
+    code: {
+      python: `import numpy as np\ndef total_variation_distance(p, q):\n    return 0.5 * np.sum(np.abs(np.array(p) - np.array(q)))`,
+      r: `library(philentropy)\ntotal_variation(p, q)`,
+      ts: `import { totalVariationDistance } from '@statlab/core';\nconst tvd = totalVariationDistance([0.6, 0.3, 0.1], [0.2, 0.5, 0.3]);`,
+    },
+    useCases: [
+      'Quantifying strict worst-case probability difference between synthetic generated data and true empirical baseline.',
+      'Measuring differential privacy budget bounds in secure database queries.'
+    ],
+    when: 'Use when assessing maximum discrepancy in probability assignment between two finite discrete distributions.',
+    cautions: [
+      'TVD equals half of the L1 norm difference between distribution vectors.',
+      'Bounded strictly between 0.0 (identical) and 1.0 (disjoint support).'
+    ],
+    workbenchId: 'total_variation_dist',
+  },
+  {
+    slug: 'competing-risks-cumulative-incidence',
+    title: 'Fine-Gray competing risks cumulative incidence calculator',
+    family: 'Survival & event history analysis',
+    description: 'Calculate Cumulative Incidence Function (CIF) and Fine-Gray subdistribution hazard ratios for competing risks survival analysis.',
+    keywords: ['competing risks calculator', 'cumulative incidence function', 'Fine Gray model', 'subdistribution hazard', 'competing events survival'],
+    inputs: ['Event times t_i', 'Event status (0=Censored, 1=Event of Interest, 2=Competing Event)', 'Group covariate'],
+    example: { a: ['N = 200 subjects', 'Event 1 (Relapse): 45', 'Event 2 (Treatment Non-Relapse Failure): 30', 'Censored: 125'], result: 'At t = 24 months: CIF_1 = 24.5%, CIF_2 = 16.2% (1 - Kaplan-Meier overestimates primary event risk).' },
+    formula: 'CIF_1(t) = ∫_0^t S(u-) dH_1(u), where S(u) is overall survival function',
+    code: {
+      python: `from lifelines import FineGrayFitter\n# Fine-Gray competing risks subdistribution regression`,
+      r: `library(cmprsk)\ncuminc(ftime, fstatus, group)`,
+      ts: `import { competingRisksCIF } from '@statlab/core';\nconst cif = competingRisksCIF(times, statusArray);`,
+    },
+    useCases: [
+      'Evaluating disease recurrence risk when non-disease mortality acts as a competing event.',
+      'Analyzing user churn due to specific product cancellation reasons when account suspension acts as a competing risk.'
+    ],
+    when: 'Use when subjects can experience alternative event types that preclude the primary event of interest from occurring.',
+    cautions: [
+      'Standard 1 - Kaplan-Meier produces upwardly biased estimates of event risk in the presence of competing risks.',
+      'Fine-Gray regression models subdistribution hazard; Cause-Specific Cox models cause-specific hazard.'
+    ],
+    workbenchId: 'competing_risks_cif',
+  },
+  {
+    slug: 'restricted-mean-survival-time-rmst',
+    title: 'Restricted Mean Survival Time (RMST) calculator',
+    family: 'Survival & event history analysis',
+    description: 'Calculate Restricted Mean Survival Time (RMST) up to horizon τ, RMST difference, and ratio for non-proportional hazards survival data.',
+    keywords: ['RMST calculator', 'Restricted Mean Survival Time', 'RMST difference', 'non proportional hazards', 'survival horizon RMST'],
+    inputs: ['Group 1 survival data', 'Group 2 survival data', 'Restriction time horizon τ'],
+    example: { a: ['Group A (n=100), Group B (n=100)', 'Restriction horizon τ = 36 months'], result: 'RMST_A = 28.4 mos, RMST_B = 22.1 mos. RMST Difference = +6.3 months (95% CI: 2.8 to 9.8, p = .0004).' },
+    formula: 'RMST(τ) = ∫_0^τ S(t) dt',
+    code: {
+      python: `from lifelines import KaplanMeierFitter\nkmf = KaplanMeierFitter().fit(durations, event_observed)\nrmst = kmf.survival_function_.loc[:tau].sum().values[0]`,
+      r: `library(survRM2)\nrmst2(time, status, arm, tau = 36)`,
+      ts: `import { calculateRMST } from '@statlab/core';\nconst res = calculateRMST(timeArray, statusArray, 36);`,
+    },
+    useCases: [
+      'Quantifying average event-free survival time gain (e.g. months gained) up to a fixed clinical time horizon τ.',
+      'Evaluating survival differences when Cox proportional hazards assumption fails (e.g. delayed treatment effect or crossing survival curves).'
+    ],
+    when: 'Use as an intuitive time-based alternative to hazard ratios, especially under non-proportional hazards.',
+    cautions: [
+      'Results depend directly on choice of horizon τ; τ should be pre-specified based on clinical or operational follow-up.',
+      'Horizon τ must not exceed maximum observed follow-up time.'
+    ],
+    workbenchId: 'rmst_survival',
+  },
+  {
+    slug: 'mean-time-between-failures-mtbf-mttr',
+    title: 'MTBF, MTTR, and system availability reliability calculator',
+    family: 'Survival & event history analysis',
+    description: 'Calculate Mean Time Between Failures (MTBF), Mean Time To Repair (MTTR), Failure Rate (λ), and System Inherent Availability (A).',
+    keywords: ['MTBF calculator', 'MTTR calculator', 'system availability calculator', 'failure rate lambda', 'uptime percentage reliability'],
+    inputs: ['Total operating uptime hours', 'Total failure count', 'Total repair downtime hours'],
+    example: { a: ['Total Uptime = 8,760 hours', 'Failures = 4', 'Total Repair Downtime = 12 hours'], result: 'MTBF = 2,190 hours, MTTR = 3.0 hours, Availability A = 99.863% (Three Nines availability).' },
+    formula: 'MTBF = Uptime / Failures,  MTTR = Downtime / Failures,  Availability A = MTBF / (MTBF + MTTR)',
+    code: {
+      python: `def calculate_availability(uptime_hrs, failures, downtime_hrs):\n    mtbf = uptime_hrs / failures\n    mttr = downtime_hrs / failures\n    availability = mtbf / (mtbf + mttr)\n    return mtbf, mttr, availability`,
+      r: `mtbf <- uptime / failures; mttr <- downtime / failures; availability <- mtbf / (mtbf + mttr)`,
+      ts: `import { calculateMTBF } from '@statlab/core';\nconst res = calculateMTBF(8760, 4, 12);`,
+    },
+    useCases: [
+      'Auditing cloud infrastructure reliability and service level agreement (SLA) uptime targets.',
+      'Evaluating industrial hardware component mean repair cycle efficiency.'
+    ],
+    when: 'Use in reliability engineering to monitor asset failure frequencies and repair speed.',
+    cautions: [
+      'Assumes constant failure rate λ = 1/MTBF (exponential distribution of time to failure).',
+      'Distinguish between MTBF (repairable systems) and MTTF (non-repairable items).'
+    ],
+    workbenchId: 'mtbf_reliability',
+  },
+  {
+    slug: 'accelerated-failure-time-aft-model',
+    title: 'Accelerated Failure Time (AFT) survival model calculator',
+    family: 'Survival & event history analysis',
+    description: 'Calculate acceleration factors (exp(-β)), median survival ratio, and survival probabilities for Weibull/Log-normal AFT models.',
+    keywords: ['AFT model calculator', 'Accelerated Failure Time', 'acceleration factor exp beta', 'Weibull AFT survival', 'time ratio survival'],
+    inputs: ['Covariate coefficient β', 'Covariate change ΔX', 'Distribution choice (Weibull, Log-Normal, Log-Logistic)'],
+    example: { a: ['Treatment coefficient β = -0.405', 'Distribution: Weibull AFT'], result: 'Acceleration Factor AF = exp(-(-0.405)) = 1.50. Treatment decelerates time to event by 50% (extends survival time by 1.5x).' },
+    formula: 'Time Ratio TR = exp(-β * ΔX),  S_treatment(t) = S_control(t / TR)',
+    code: {
+      python: `from lifelines import WeibullAFTFitter\naft = WeibullAFTFitter().fit(df, 'duration', 'event')\nprint(aft.summary)`,
+      r: `library(survival)\nsurvreg(Surv(time, status) ~ rx, dist = "weibull")`,
+      ts: `import { aftAccelerationFactor } from '@statlab/core';\nconst tr = aftAccelerationFactor(-0.405);`,
+    },
+    useCases: [
+      'Modeling direct stretching or shrinking of survival time horizons resulting from intervention exposure.',
+      'Analyzing component degradation speedup under elevated thermal or voltage stress.'
+    ],
+    when: 'Use when interested in direct multiplicative effect of covariates on survival time (Time Ratio) rather than hazard ratios.',
+    cautions: [
+      'Covariate with β < 0 increases survival time (AF > 1); β > 0 accelerates time to failure (AF < 1).',
+      'Requires parametric baseline distribution assumption.'
+    ],
+    workbenchId: 'aft_survival',
+  },
+  {
+    slug: 'besag-l-function-spatial-points',
+    title: 'Besag’s L-function spatial point pattern calculator',
+    family: 'Spatial statistics & geostatistics',
+    description: 'Calculate Besag’s L-function L(r) and L(r) - r spatial point pattern transformation for detecting clustering vs spatial inhibition.',
+    keywords: ['Besag L function', 'spatial point pattern L function', 'Ripleys L function', 'spatial clustering indicator', 'linearized K function'],
+    inputs: ['Point coordinates (X, Y)', 'Study window Area A', 'Search radii range r'],
+    example: { a: ['N = 180 points', 'Area A = 10,000 sq units', 'Radius r = 10 units'], result: 'K(10) = 415.2, Besag L(10) = √(415.2/π) = 11.50. L(r) - r = +1.50 (Statistically significant spatial clustering at r=10).' },
+    formula: 'L(r) = √( K(r) / π ),  Centered L(r) - r = √( K(r) / π ) - r',
+    code: {
+      python: `import pointpats\n# Compute Besag's L-function for spatial point dataset`,
+      r: `library(spatstat)\nLest(point_pattern)`,
+      ts: `import { besagLFunction } from '@statlab/core';\nconst res = besagLFunction(points, area, radiusR);`,
+    },
+    useCases: [
+      'Detecting spatial point clustering of retail store locations, tree species, or disease outbreak cases.',
+      'Linearizing Ripley’s K-function to stabilize variance across search radii.'
+    ],
+    when: 'Use in place of Ripley’s K-function for easier interpretation (under CSR Complete Spatial Randomness, L(r) - r = 0).',
+    cautions: [
+      'Values of L(r) - r > 0 indicate spatial clustering; L(r) - r < 0 indicate spatial dispersion/regularity.',
+      'Apply edge corrections near window boundaries.'
+    ],
+    workbenchId: 'besag_l_function',
+  },
+  {
+    slug: 'hawkes-process-intensity-calculator',
+    title: 'Hawkes self-exciting point process intensity calculator',
+    family: 'Spatial statistics & geostatistics',
+    description: 'Calculate Hawkes self-exciting point process conditional intensity λ(t) and branching ratio n measuring event cascade clustering.',
+    keywords: ['Hawkes process calculator', 'self exciting point process', 'conditional intensity lambda', 'branching ratio Hawkes', 'event cascade clustering'],
+    inputs: ['Baseline intensity μ₀', 'Excitation magnitude α', 'Decay rate β', 'Event timestamps array t_i'],
+    example: { a: ['Baseline μ₀ = 0.50', 'Alpha α = 0.80', 'Decay β = 1.20', 'Current time t = 10.0'], result: 'Branching ratio n = α/β = 0.667 (Subcritical stable cluster). Current intensity λ(10.0) = 1.24 events/sec.' },
+    formula: 'λ(t) = μ₀ + ∑_{t_i < t} α * exp( -β (t - t_i) ),  Branching Ratio n = α / β',
+    code: {
+      python: `import numpy as np\ndef hawkes_intensity(t, timestamps, mu0, alpha, beta):\n    past = timestamps[timestamps < t]\n    return mu0 + np.sum(alpha * np.exp(-beta * (t - past)))`,
+      r: `library(hawkes)\n# Fit Hawkes self-exciting point process model`,
+      ts: `import { hawkesIntensity } from '@statlab/core';\nconst lam = hawkesIntensity(10.0, timestamps, 0.5, 0.8, 1.2);`,
+    },
+    useCases: [
+      'Modeling financial market trade burst clustering, seismic foreshock/aftershock cascades, and social media viral re-tweet bursts.',
+      'Predicting microservice error cascade frequency during infrastructure failures.'
+    ],
+    when: 'Use when past event occurrences temporarily elevate the probability of future events occurring (self-excitation).',
+    cautions: [
+      'Branching ratio n = α/β must be strictly < 1.0 for process stability (n ≥ 1 causes explosive infinite cascade).',
+      'Assumes exponential kernel memory decay.'
+    ],
+    workbenchId: 'hawkes_process',
+  },
+  {
+    slug: 'spatial-lag-x-slx-regression',
+    title: 'Spatial Lag of X (SLX) cross-regressive spillover calculator',
+    family: 'Spatial statistics & geostatistics',
+    description: 'Calculate Spatial Lag of X (SLX) regression parameters and spatial spillover direct/indirect marginal effects.',
+    keywords: ['SLX model calculator', 'Spatial Lag of X', 'spatial spillover effect', 'cross regressive spatial model', 'spatial lag explanatory variable'],
+    inputs: ['Response Y', 'Predictors X', 'Spatial weight matrix W', 'Spillover coefficients θ'],
+    example: { a: ['N = 75 spatial units', 'Direct effect β_1 = 0.45', 'Indirect spatial spillover θ_1 = 0.30'], result: 'Total Spatial Impact = β_1 + θ_1 = 0.75 (30% of total effect spills over to neighboring regions).' },
+    formula: 'Y = X β + W X θ + ε',
+    code: {
+      python: `import libpysal, spreg\n# Fit Spatial Lag of X (SLX) spatial econometrics model`,
+      r: `library(spatialreg)\nlmSLX(y ~ x1 + x2, listw = spatial_weights)`,
+      ts: `import { slxSpatialRegression } from '@statlab/core';\nconst res = slxSpatialRegression(yVals, xMatrix, weightsMatrix);`,
+    },
+    useCases: [
+      'Measuring local vs neighboring spillover impact of infrastructure investments on regional property values.',
+      'Evaluating spatial cross-contamination impact of server load spikes on adjacent availability zones.'
+    ],
+    when: 'Use when spatial spillovers originate directly from neighboring explanatory variables X rather than spatial lag of response Y.',
+    cautions: [
+      'SLX models can be estimated via standard Ordinary Least Squares (OLS) after constructing W X spatial lag terms.',
+      'Compare against Spatial Durbin Model (SDM) if spatial dependence in response Y is also suspected.'
+    ],
+    workbenchId: 'slx_spatial_reg',
+  },
+  {
+    slug: 'local-gearys-c-lisa',
+    title: 'Local Geary’s C (LISA) spatial dissimilarity outlier calculator',
+    family: 'Spatial statistics & geostatistics',
+    description: 'Calculate Local Geary’s C (LISA) statistic identifying spatial dissimilarity outliers and spatial micro-clusters.',
+    keywords: ['Local Geary C calculator', 'LISA Geary C', 'spatial outlier detection', 'local spatial dissimilarity', 'local spatial autocorrelation'],
+    inputs: ['Spatial variable X', 'Spatial weight matrix W', 'Location index i'],
+    example: { a: ['Location i = 14', 'Local Geary C_i = 2.45', 'p-value = .012'], result: 'Statistically significant high spatial dissimilarity outlier (Location i differs sharply from its immediate spatial neighbors).' },
+    formula: 'C_i = ∑_j w_{ij} (x_i - x_j)² / s_x²',
+    code: {
+      python: `import libpysal, esda\n# Compute Local Geary C spatial dissimilarity statistic\n# lg = esda.Geary_Local(x, w)`,
+      r: `library(spdep)\nlocalC(x, spatial_weights)`,
+      ts: `import { localGearyC } from '@statlab/core';\nconst c_i = localGearyC(xVals, weightsMatrix, targetIndex);`,
+    },
+    useCases: [
+      'Detecting localized spatial anomaly points where a unit differs significantly from surround neighbors.',
+      'Identifying rogue server instances exhibiting anomalous latency compared to adjacent cluster nodes.'
+    ],
+    when: 'Use Local Geary’s C to identify spatial dissimilarity outliers (high-low or low-high spatial boundaries).',
+    cautions: [
+      'Local Geary’s C values near 0 indicate spatial similarity (clustering); large values C_i > 1 indicate spatial dissimilarity (outliers).',
+      'Adjust p-values for multiple spatial testing (FDR or Bonferroni).'
+    ],
+    workbenchId: 'local_geary_c',
+  },
+  {
+    slug: 'continuous-wavelet-transform-cwt',
+    title: 'Continuous Wavelet Transform (CWT) scalogram calculator',
+    family: 'Signal processing & wavelet analysis',
+    description: 'Calculate Continuous Wavelet Transform (CWT) scalogram coefficients and time-frequency energy density distribution using Morlet/Ricker wavelets.',
+    keywords: ['CWT calculator', 'Continuous Wavelet Transform', 'scalogram power spectrum', 'Morlet wavelet time frequency', 'wavelet scale frequency'],
+    inputs: ['Signal time series array x(t)', 'Sampling frequency f_s', 'Wavelet scales array a'],
+    example: { a: ['Signal N = 1,000 samples', 'f_s = 250 Hz', 'Morlet wavelet (ω₀ = 6)'], result: 'Computes 2D CWT matrix (Scales x Time). Identifies localized transient frequency burst at t=1.4s, f=35Hz.' },
+    formula: 'CWT(a, b) = (1/√|a|) ∫_{-∞}^{+∞} x(t) ψ*( (t - b)/a ) dt',
+    code: {
+      python: `import scipy.signal as signal\n# CWT with Ricker or Morlet wavelet\n# cwtmatr = signal.cwt(data, signal.ricker, widths)`,
+      r: `library(WaveletComp)\nanalyze.wavelet(df, "signal_col")`,
+      ts: `import { cwtScalogram } from '@statlab/core';\nconst cwtMatrix = cwtScalogram(signalArray, sampleRate, scalesArray);`,
+    },
+    useCases: [
+      'Time-frequency decomposition of non-stationary signals (EEG/ECG biomedical data, seismic waves, vibration analysis).',
+      'Detecting transient latency spikes and spectral bursts in microservice network traffic.'
+    ],
+    when: 'Use CWT when analyzing non-stationary time series where frequency content changes dynamically over time.',
+    cautions: [
+      'Scale-to-frequency mapping depends on specific choice of mother wavelet (e.g. Morlet vs Ricker).',
+      'Edge effects occur near signal boundaries (Cone of Influence COI).'
+    ],
+    workbenchId: 'cwt_wavelet',
+  },
+  {
+    slug: 'cross-wavelet-coherence',
+    title: 'Cross-Wavelet Transform and Coherence calculator',
+    family: 'Signal processing & wavelet analysis',
+    description: 'Calculate Cross-Wavelet Transform (XWT) spectrum, Wavelet Coherence R²(a,b), and phase arrows between two non-stationary time series.',
+    keywords: ['Cross Wavelet Coherence', 'wavelet coherence calculator', 'XWT spectrum', 'wavelet phase difference', 'time frequency cross correlation'],
+    inputs: ['Signal X time series', 'Signal Y time series', 'Sampling frequency f_s'],
+    example: { a: ['Signal X (N=500)', 'Signal Y (N=500)', 'Morlet mother wavelet'], result: 'Wavelet Coherence R² = 0.89 at f=12Hz, phase lag = +45° (Signal X leads Signal Y by 45 degrees in 12Hz band).' },
+    formula: 'R²(a,b) = | S( a⁻¹ W_{xy}(a,b) ) |² / [ S( a⁻¹ |W_x(a,b)|² ) * S( a⁻¹ |W_y(a,b)|² ) ]',
+    code: {
+      python: `import pywt\n# Compute cross-wavelet transform and wavelet coherence`,
+      r: `library(biwavelet)\nxwt(d1, d2)`,
+      ts: `import { crossWaveletCoherence } from '@statlab/core';\nconst res = crossWaveletCoherence(signalX, signalY, sampleRate);`,
+    },
+    useCases: [
+      'Evaluating localized time-frequency co-movements and lead-lag relationships between two non-stationary economic or physical series.',
+      'Analyzing phase synchrony between CPU usage spikes and API error rates.'
+    ],
+    when: 'Use to test whether two time series share localized time-frequency power and examine their phase relationship.',
+    cautions: [
+      'Requires smoothing S(·) in both time and scale dimensions to prevent coherence R² identically equaling 1.0.',
+      'Phase angles range from -π to +π.'
+    ],
+    workbenchId: 'cross_wavelet_coh',
+  },
+  {
+    slug: 'gnn-dirichlet-energy-oversmoothing',
+    title: 'GNN Dirichlet energy over-smoothing diagnostic calculator',
+    family: 'Signal processing & wavelet analysis',
+    description: 'Calculate Graph Neural Network (GNN) Dirichlet energy E(H) and Mean Pairwise Distance (MAD) to detect feature over-smoothing across deep graph layers.',
+    keywords: ['GNN Dirichlet energy', 'over smoothing calculator', 'Graph Neural Network oversmoothing', 'MAD metric GNN', 'graph node feature collapse'],
+    inputs: ['Graph adjacency matrix A (N x N)', 'Node feature matrix H (N x d) at layer l'],
+    example: { a: ['Graph N = 500 nodes', 'Layer 2 Dirichlet Energy E(H) = 0.42', 'Layer 8 Dirichlet Energy E(H) = 0.003'], result: 'Dirichlet Energy drops near zero at Layer 8. Severe feature over-smoothing (node representations collapsing).' },
+    formula: 'E(H) = Tr( H^T L_sym H ) / Tr( H^T H ), where L_sym = I - D^{-1/2} A D^{-1/2}',
+    code: {
+      python: `import torch\ndef dirichlet_energy(adj_norm, features):\n    # E(H) = Tr(H^T (I - A_norm) H) / Tr(H^T H)\n    laplacian = torch.eye(adj_norm.size(0)) - adj_norm\n    energy = torch.trace(features.T @ laplacian @ features)\n    return (energy / torch.trace(features.T @ features)).item()`,
+      r: `library(igraph)\n# Compute GNN Dirichlet energy over-smoothing metric`,
+      ts: `import { gnnDirichletEnergy } from '@statlab/core';\nconst energy = gnnDirichletEnergy(adjMatrix, featureMatrix);`,
+    },
+    useCases: [
+      'Diagnosing over-smoothing performance degradation in deep Graph Neural Networks (GCN, GAT, GraphSAGE).',
+      'Determining optimal GNN layer depth limits before node representations collapse to uniform vectors.'
+    ],
+    when: 'Use during deep GNN model design and hyperparameter tuning to monitor graph representation collapse.',
+    cautions: [
+      'As layer depth L → ∞ in unregularized GNNs, E(H) → 0 (complete feature collapse).',
+      'Pair with DropEdge or PairNorm regularization to preserve Dirichlet energy.'
+    ],
+    workbenchId: 'gnn_dirichlet_energy',
+  },
+  {
+    slug: 'hilbert-transform-instantaneous-phase',
+    title: 'Hilbert transform instantaneous amplitude and phase calculator',
+    family: 'Signal processing & wavelet analysis',
+    description: 'Calculate Hilbert transform analytic signal z(t), instantaneous amplitude envelope A(t), and instantaneous phase θ(t).',
+    keywords: ['Hilbert transform calculator', 'analytic signal Hilbert', 'instantaneous phase calculator', 'amplitude envelope Hilbert', 'instantaneous frequency'],
+    inputs: ['Real time domain signal x(t)'],
+    example: { a: ['Narrowband signal N = 500 samples'], result: 'Calculates Analytic Signal z(t) = x(t) + i H{x(t)}. Peak Instantaneous Amplitude A_max = 3.42 V, Phase θ(t) unwrapped.' },
+    formula: 'z(t) = x(t) + i H{x(t)},  A(t) = |z(t)| = √(x² + H{x}²),  θ(t) = arctan( H{x}(t) / x(t) )',
+    code: {
+      python: `import numpy as np\nfrom scipy.signal import hilbert\nanalytic_signal = hilbert(signal_data)\namplitude_envelope = np.abs(analytic_signal)\ninstantaneous_phase = np.unwrap(np.angle(analytic_signal))`,
+      r: `library(seewave)\nhilbert(signal_data, f = 1000)`,
+      ts: `import { hilbertTransform } from '@statlab/core';\nconst res = hilbertTransform(signalArray);`,
+    },
+    useCases: [
+      'Extracting instantaneous amplitude envelopes and instantaneous frequencies for vibration analysis and acoustic signals.',
+      'Demodulating phase-modulated telemetry signals.'
+    ],
+    when: 'Use on narrowband real-valued time series signals to compute instantaneous amplitude, phase, and frequency.',
+    cautions: [
+      'Signal should ideally be narrowband (Bedrosian theorem) for physically meaningful instantaneous frequency interpretations.',
+      'Unwrap phase angles to avoid 2π jump discontinuities.'
+    ],
+    workbenchId: 'hilbert_transform',
+  },
+  {
+    slug: 'differential-item-functioning-dif-mantel',
+    title: 'Mantel-Haenszel Differential Item Functioning (DIF) calculator',
+    family: 'Psychometrics & scale analysis',
+    description: 'Calculate Mantel-Haenszel odds ratio (α_MH) and Chi-square statistic for psychometric Differential Item Functioning (DIF) item bias evaluation.',
+    keywords: ['DIF calculator', 'Differential Item Functioning', 'Mantel Haenszel DIF', 'item bias psychometrics', 'DIF ETS classification'],
+    inputs: ['Focal group item response matrix', 'Reference group item response matrix', 'Total score matching stratification'],
+    example: { a: ['Focal Group (n=250)', 'Reference Group (n=250)', 'Matched across 5 total score strata'], result: 'MH Odds Ratio α_MH = 0.52, ETS Delta Δ_MH = -1.52 (Moderate-to-Severe DIF against Focal group; Class B DIF item).' },
+    formula: 'α_MH = [ ∑ (R_m * Q_m / N_m) ] / [ ∑ (F_m * P_m / N_m) ],  Δ_MH = -2.35 * ln(α_MH)',
+    code: {
+      python: `from difPy import dif_mh\n# Compute Mantel-Haenszel DIF item bias evaluation`,
+      r: `library(difR)\ndifMH(Data, group = group_vec, focal.name = "focal")`,
+      ts: `import { difMantelHaenszel } from '@statlab/core';\nconst res = difMantelHaenszel(focalData, refData);`,
+    },
+    useCases: [
+      'Auditing standardized test questions and psychometric assessment items for unfair subgroup demographic bias.',
+      'Evaluating LLM benchmark question fairness across domain prompt formulations.'
+    ],
+    when: 'Use to evaluate whether test takers of equal underlying ability from different demographic groups have different probabilities of answering an item correctly.',
+    cautions: [
+      'Requires matching test takers on overall total score or latent ability θ to isolate item bias from true group ability differences.',
+      'ETS DIF categories: Class A (|Δ_MH| < 1.0, negligible), Class B (1.0 ≤ |Δ_MH| < 1.5), Class C (|Δ_MH| ≥ 1.5, severe).'
+    ],
+    workbenchId: 'dif_mantel_haenszel',
+  },
+  {
+    slug: 'mcdonalds-omega-hierarchical',
+    title: 'McDonald’s Omega Hierarchical (ω_h) reliability calculator',
+    family: 'Psychometrics & scale analysis',
+    description: 'Calculate McDonald’s Omega Total (ω_t) and Omega Hierarchical (ω_h) measuring general factor variance saturation in bi-factor psychometric scales.',
+    keywords: ['McDonalds omega calculator', 'omega hierarchical', 'omega total psychometrics', 'general factor saturation', 'bifactor scale reliability'],
+    inputs: ['Factor loadings matrix (General factor g loadings, Specific factor loadings s_k)', 'Item uniquenesses u_i²'],
+    example: { a: ['12-item bifactor scale', 'General factor loadings array g_i', 'Group factor loadings arrays'], result: 'Omega Total ω_t = 0.88, Omega Hierarchical ω_h = 0.74 (74% of total scale variance is attributable to single general construct).' },
+    formula: 'ω_h = ( ∑ λ_{gi} )² / [ ( ∑ λ_{gi} )² + ∑_k ( ∑ λ_{ski} )² + ∑ u_i² ]',
+    code: {
+      python: `import factor_analyzer\n# Compute McDonald's omega hierarchical and omega total`,
+      r: `library(psych)\nomega(correlation_matrix, nfactors = 3)`,
+      ts: `import { mcdonaldsOmega } from '@statlab/core';\nconst res = mcdonaldsOmega(generalLoadings, specificLoadings, uniquenesses);`,
+    },
+    useCases: [
+      'Evaluating composite scale reliability in multi-dimensional survey instruments and psychometric questionnaires.',
+      'Measuring single general factor saturation in multi-dimensional benchmark test batteries.'
+    ],
+    when: 'Use in preference to Cronbach’s alpha when scale items violate essential tau-equivalence or have multi-factor structure.',
+    cautions: [
+      'Omega Hierarchical ω_h measures variance attributable strictly to general factor g, ignoring subscale specific factors.',
+      'Cronbach’s alpha under- or over-estimates scale reliability when tau-equivalence fails.'
+    ],
+    workbenchId: 'mcdonalds_omega',
+  },
+  {
+    slug: 'conjoint-analysis-part-worth-utility',
+    title: 'Conjoint analysis part-worth utility & relative importance calculator',
+    family: 'Psychometrics & scale analysis',
+    description: 'Calculate part-worth utilities u_ij and feature attribute relative importance percentages from consumer preference rating conjoint data.',
+    keywords: ['conjoint analysis calculator', 'part worth utility', 'relative importance conjoint', 'attribute preference conjoint', 'tradeoff analysis utility'],
+    inputs: ['Product attribute profile ratings matrix', 'Attribute level indicator columns'],
+    example: { a: ['3 Attributes (Price, Brand, Battery Life)', 'Preference ratings across 16 profiles'], result: 'Relative Importance: Price = 42.5%, Battery Life = 35.0%, Brand = 22.5%.' },
+    formula: 'Importance_k = Range(u_k) / ∑_m Range(u_m) * 100%, where Range(u_k) = max(u_kj) - min(u_kj)',
+    code: {
+      python: `import statsmodels.api as sm\n# Ordinary Least Squares regression on dummy-coded conjoint profiles\nmodel = sm.OLS(ratings, profiles_dummy).fit()\nprint(model.params)`,
+      r: `library(conjoint)\nConjoint(y, x, z)`,
+      ts: `import { conjointAnalysis } from '@statlab/core';\nconst res = conjointAnalysis(ratingsArray, profilesMatrix);`,
+    },
+    useCases: [
+      'Evaluating consumer feature trade-off preferences in product design and pricing research.',
+      'Quantifying developer preferences across software tool feature combinations.'
+    ],
+    when: 'Use when analyzing multi-attribute discrete choice or rating data to determine relative importance of each feature.',
+    cautions: [
+      'Part-worth utilities within an attribute sum to zero under standard sum-to-zero coding.',
+      'Relative importance percentages sum to 100% across all evaluated attributes.'
+    ],
+    workbenchId: 'conjoint_part_worth',
+  },
+  {
+    slug: 'ewma-control-chart-spc',
+    title: 'EWMA control chart SPC parameters calculator',
+    family: 'Statistical process control & quality engineering',
+    description: 'Calculate Exponentially Weighted Moving Average (EWMA) control limits (UCL, LCL, Center Line) and asymptotic 3-sigma bounds.',
+    keywords: ['EWMA chart calculator', 'EWMA control limits', 'exponentially weighted moving average SPC', 'EWMA lambda factor', 'small shift SPC chart'],
+    inputs: ['Smoothing weight λ (0 < λ ≤ 1)', 'Control limit multiplier L (typically L=3)', 'Target mean μ₀', 'Standard deviation σ'],
+    example: { a: ['Smoothing weight λ = 0.20', 'Multiplier L = 2.962', 'Target μ₀ = 10.0', 'SD σ = 0.50'], result: 'Asymptotic UCL = 10.504, LCL = 9.496. Asymptotic SD σ_EWMA = σ * √[ λ/(2-λ) ] = 0.167.' },
+    formula: 'Z_t = λ X_t + (1 - λ) Z_{t-1},  UCL/LCL = μ₀ ± L * σ * √[ (λ / (2 - λ)) * (1 - (1 - λ)^{2t}) ]',
+    code: {
+      python: `import numpy as np\ndef ewma_limits(mu0, sigma, lambda_val=0.2, L=3.0):\n    asymptotic_sd = sigma * np.sqrt(lambda_val / (2 - lambda_val))\n    ucl = mu0 + L * asymptotic_sd\n    lcl = mu0 - L * asymptotic_sd\n    return mu0, ucl, lcl`,
+      r: `library(qcc)\nqcc(data, type = "ewma", lambda = 0.2, nsigmas = 3)`,
+      ts: `import { ewmaControlChart } from '@statlab/core';\nconst limits = ewmaControlChart(10.0, 0.50, { lambda: 0.2, L: 3.0 });`,
+    },
+    useCases: [
+      'Monitoring small persistent process mean shifts (0.5 to 1.5 sigma) in high-precision manufacturing.',
+      'Tracking micro-drifts in cloud service execution latency.'
+    ],
+    when: 'Use EWMA charts when detecting small process shifts faster than standard Shewhart X-bar charts.',
+    cautions: [
+      'Smaller smoothing weights λ (e.g. λ = 0.05 - 0.20) increase sensitivity to small shifts but increase lag for large sudden spikes.',
+      'For λ = 1.0, EWMA chart reduces exactly to standard Shewhart Individuals chart.'
+    ],
+    workbenchId: 'ewma_spc_chart',
+  },
+  {
+    slug: 'six-sigma-dpmo-calculator',
+    title: 'Defects Per Million Opportunities (DPMO) and Sigma Level calculator',
+    family: 'Statistical process control & quality engineering',
+    description: 'Calculate Defects Per Million Opportunities (DPMO), Process Yield (Y), Defects Per Unit (DPU), and Six Sigma Level (with 1.5σ shift).',
+    keywords: ['DPMO calculator', 'Six Sigma level calculator', 'Defects Per Million Opportunities', 'process yield DPU', '1.5 sigma shift calculator'],
+    inputs: ['Total units inspected N', 'Opportunities for defect per unit O', 'Total defects found D'],
+    example: { a: ['Units inspected N = 5,000', 'Opportunities per unit O = 10', 'Total defects D = 17'], result: 'DPU = 0.0034, DPMO = 340, Process Yield Y = 99.66%, Six Sigma Level = 4.90σ (includes 1.5σ shift).' },
+    formula: 'DPMO = (D / (N * O)) * 1,000,000,  Sigma Level = Z_{norm}(1 - DPMO/1,000,000) + 1.5',
+    code: {
+      python: `from scipy import stats\ndef calculate_dpmo(defects, units, opportunities):\n    dpmo = (defects / (units * opportunities)) * 1e6\n    yield_pct = (1 - defects / (units * opportunities))\n    sigma_level = stats.norm.ppf(yield_pct) + 1.5\n    return dpmo, yield_pct, sigma_level`,
+      r: `library(SixSigma)\n# Compute DPMO and Sigma Level`,
+      ts: `import { calculateDPMO } from '@statlab/core';\nconst res = calculateDPMO(17, 5000, 10);`,
+    },
+    useCases: [
+      'Auditing Six Sigma quality levels for software build releases, customer order fulfillment, and manufacturing assembly.',
+      'Benchmarking error defect density per million API requests.'
+    ],
+    when: 'Use to standardize defect rate reporting across processes with varying complexity and opportunity counts.',
+    cautions: [
+      'Standard Six Sigma conventions add an assumed 1.5σ long-term process shift to short-term Z-score.',
+      '6 Sigma corresponds to 3.4 DPMO.'
+    ],
+    workbenchId: 'dpmo_six_sigma',
+  },
+  {
+    slug: 'gage-rr-anova-method',
+    title: 'Gage R&R ANOVA method variance decomposition calculator',
+    family: 'Statistical process control & quality engineering',
+    description: 'Calculate Gage Repeatability & Reproducibility (Gage R&R) percentage of total variation (%GRR) using two-way ANOVA with interaction.',
+    keywords: ['Gage RR calculator', 'Gage R&R ANOVA', 'repeatability reproducibility', 'measurement system analysis MSA', 'percent GRR'],
+    inputs: ['Operators count', 'Parts count', 'Replicates count', 'Measurement values array'],
+    example: { a: ['3 Operators, 10 Parts, 3 Replicates (90 total measurements)'], result: 'Repeatability EV = 0.12, Reproducibility AV = 0.08, %GRR = 14.5% (Marginal measurement system; <10% ideal).' },
+    formula: '%GRR = √( Var(Repeatability) + Var(Reproducibility) ) / Total_SD * 100%',
+    code: {
+      python: `import statsmodels.api as sm\nfrom statsmodels.formula.api import ols\n# Two-Way ANOVA with Interaction for Gage R&R\n# model = ols('measurement ~ C(part) + C(operator) + C(part):C(operator)', data=df).fit()`,
+      r: `library(SixSigma)\nss.rr(var = measurement, part = part, appr = operator, data = gage_df)`,
+      ts: `import { gageRRANOVA } from '@statlab/core';\nconst res = gageRRANOVA(measurementsArray, 3, 10, 3);`,
+    },
+    useCases: [
+      'Auditing measurement system variation before conducting process capability studies (Cpk).',
+      'Evaluating human labeller variability vs automated tagging tool inconsistency.'
+    ],
+    when: 'Use in Measurement System Analysis (MSA) to determine whether measurement variation comes from equipment (repeatability) or operators (reproducibility).',
+    cautions: [
+      '%GRR < 10% indicates acceptable measurement system; 10-30% marginal; >30% unacceptable.',
+      'ANOVA method accounts for Part-by-Operator interaction, unlike Average and Range method.'
+    ],
+    workbenchId: 'gage_rr_anova',
+  },
+  {
+    slug: 'dunnett-post-hoc-test',
+    title: 'Dunnett’s post-hoc test control comparison calculator',
+    family: 'ANOVA & factorial analysis',
+    description: 'Calculate Dunnett’s post-hoc test t-statistics, critical values d_α, and adjusted p-values for comparing multiple treatment group means against a single control group.',
+    keywords: ['Dunnett test calculator', 'Dunnett post hoc ANOVA', 'control group comparison post hoc', 'Dunnett critical value', 'treatment vs control test'],
+    inputs: ['Control group mean, SD, and n_0', 'Treatment group means, SDs, and n_i arrays', 'ANOVA Mean Square Error (MSE)'],
+    example: { a: ['Control Group (n0=20, mean=10.2)', '3 Treatment Groups (n=20 each)', 'MSE = 3.50'], result: 'Treatment 1 vs Control: t = 2.85, Dunnett d_crit = 2.41 (p = .018, Statistically significant difference vs Control).' },
+    formula: 't_i = (X̄_i - X̄_0) / √( MSE * (1/n_i + 1/n_0) ), compared against Dunnett multivariate t distribution',
+    code: {
+      python: `from scipy import stats\n# Dunnett's test for comparing treatments against control group`,
+      r: `library(multcomp)\nglht(anova_model, linfct = mcp(group = "Dunnett"))`,
+      ts: `import { dunnettPostHoc } from '@statlab/core';\nconst res = dunnettPostHoc(controlMean, treatmentMeans, mse, sampleSizes);`,
+    },
+    useCases: [
+      'Comparing multiple experimental software optimization branches against a single baseline main branch.',
+      'Evaluating multiple drug dosage treatments against a single placebo control group.'
+    ],
+    when: 'Use for post-hoc testing after ANOVA when all treatment groups are compared strictly against one control group (rather than all pairwise comparisons).',
+    cautions: [
+      'Dunnett’s test has higher statistical power than Tukey’s HSD for control-vs-treatment designs because it makes k-1 comparisons instead of k(k-1)/2.',
+      'Sample sizes in treatment groups should ideally equal control group size (or n_0 = n_i * √k).'
+    ],
+    workbenchId: 'dunnett_post_hoc',
+  },
+  {
+    slug: 'two-way-repeated-measures-anova',
+    title: 'Two-way repeated measures ANOVA calculator',
+    family: 'ANOVA & factorial analysis',
+    description: 'Calculate Two-Way Repeated Measures ANOVA F-statistics, Greenhouse-Geisser sphericity corrections, and partial eta-squared (η²_p) effect sizes.',
+    keywords: ['two way repeated measures ANOVA', 'factorial repeated measures', 'sphericity correction ANOVA', 'Greenhouse Geisser calculator', 'within subjects ANOVA'],
+    inputs: ['Factor A levels', 'Factor B levels', 'Repeated observations matrix across subjects'],
+    example: { a: ['2 Factor A levels (Pre/Post)', '3 Factor B levels (Dose Low/Med/High)', 'N = 15 subjects'], result: 'Interaction A x B: F(2, 28) = 5.82, p = .0078, Partial η²_p = 0.293 (Greenhouse-Geisser ε = 0.84).' },
+    formula: 'F_{A*B} = MS_{A*B} / MS_{Interaction_Error},  η²_p = SS_{A*B} / (SS_{A*B} + SS_{Error})',
+    code: {
+      python: `import statsmodels.api as sm\nfrom statsmodels.stats.anova import AnovaRM\naov = AnovaRM(df, 'value', 'subject', within=['factor_a', 'factor_b']).fit()\nprint(aov)`,
+      r: `library(ez)\nezANOVA(data, dv = value, wid = subject, within = .(factor_a, factor_b))`,
+      ts: `import { twoWayRepeatedANOVA } from '@statlab/core';\nconst res = twoWayRepeatedANOVA(matrixData, factorALevels, factorBLevels);`,
+    },
+    useCases: [
+      'Evaluating user interface task latency across 2 layout factors and 3 device types tested on the same group of users.',
+      'Measuring subject physiological response across time points and drug dosage tiers.'
+    ],
+    when: 'Use when the same subjects are measured across all combinations of two within-subjects factors.',
+    cautions: [
+      'Requires checking Mauchly’s test of sphericity for each within-subjects factor and interaction.',
+      'Apply Greenhouse-Geisser or Huynh-Feldt degrees of freedom adjustment if sphericity is violated.'
+    ],
+    workbenchId: 'two_way_rm_anova',
+  },
+  {
+    slug: 'equi-variance-bartlett-test',
+    title: 'Bartlett’s test for homogeneity of variances calculator',
+    family: 'ANOVA & factorial analysis',
+    description: 'Calculate Bartlett’s test Chi-square statistic (T) and p-value for testing equal variances across k independent normal sample groups.',
+    keywords: ['Bartletts test calculator', 'homogeneity of variance test', 'Bartlett test equal variance', 'ANOVA variance assumption', 'k group variance test'],
+    inputs: ['k sample variance estimates s_i²', 'Sample sizes n_i arrays'],
+    example: { a: ['4 groups (n1=15, n2=15, n3=15, n4=15)', 'Sample variances: [4.2, 5.1, 4.8, 12.5]'], result: 'Bartlett Chi-Square T = 8.42, df = 3, p-value = .0381 (Statistically significant variance heterogeneity; equal variance assumption violated).' },
+    formula: 'T = [ (N - k) ln(s_p²) - ∑ (n_i - 1) ln(s_i²) ] / [ 1 + (1 / (3(k - 1))) ( ∑ (1 / (n_i - 1)) - 1 / (N - k) ) ]',
+    code: {
+      python: `from scipy import stats\nstat, p = stats.bartlett(group1, group2, group3, group4)\nprint(f"Chi2={stat:.4f}, p={p:.4f}")`,
+      r: `bartlett.test(value ~ group, data = df)`,
+      ts: `import { bartlettTest } from '@statlab/core';\nconst res = bartlettTest(sampleVariances, sampleSizes);`,
+    },
+    useCases: [
+      'Testing equal variance assumptions prior to conducting standard Student’s one-way ANOVA.',
+      'Verifying variance homogeneity across server benchmark hardware groups.'
+    ],
+    when: 'Use to test homogeneity of variances when data in each group is verified to be normally distributed.',
+    cautions: [
+      'Bartlett’s test is extremely sensitive to non-normality; if data is skewed or heavy-tailed, switch to Levene’s test or Brown-Forsythe test.',
+      'Rejection of null hypothesis indicates Welch’s ANOVA should be used instead of standard ANOVA.'
+    ],
+    workbenchId: 'bartlett_test',
+  },
 ];
 
 export const CATEGORIES = [
@@ -10859,7 +11486,7 @@ export function getCalculatorCategory(p) {
   }
 
   // 4. Vector Distances & Embeddings
-  if (f.includes('vector distance') || s.includes('cosine-similarity') || s.includes('wasserstein') || s.includes('mahalanobis-distance') || s.includes('euclidean') || s.includes('bray-curtis') || s.includes('minkowski') || s.includes('jaccard') || s.includes('hamming') || s.includes('haversine') || s.includes('bhattacharyya') || s.includes('hellinger') || s.includes('gower') || s.includes('hopkins') || s.includes('overlap')) {
+  if (f.includes('vector distance') || s.includes('cosine-similarity') || s.includes('wasserstein') || s.includes('mahalanobis-distance') || s.includes('euclidean') || s.includes('bray-curtis') || s.includes('minkowski') || s.includes('jaccard') || s.includes('hamming') || s.includes('haversine') || s.includes('bhattacharyya') || s.includes('hellinger') || s.includes('gower') || s.includes('hopkins') || s.includes('overlap') || s.includes('poincare') || s.includes('jensen-shannon') || s.includes('total-variation')) {
     return CATEGORIES.find((c) => c.slug === 'vector-distances-embeddings');
   }
 
