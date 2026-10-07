@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { calculatorPages, generateSeoCalculatorPages, renderCalculatorPage, renderSitemap } from '../scripts/generate-seo-calculators.mjs';
 
 describe('SEO calculator pages', () => {
-  it('declares the milestone 82 statistical calculator suite', () => {
+  it('declares the milestone 425 statistical calculator suite', () => {
     expect(calculatorPages.map((page) => page.slug)).toEqual([
       'welch-t-test',
       'student-t-test',
@@ -407,8 +407,33 @@ describe('SEO calculator pages', () => {
       'cliffs-delta-nonparametric-effect',
       'vargha-delaney-a-effect-size',
       'item-information-function-irt',
+      'two-sample-z-test-means',
+      'scheffe-post-hoc-test',
+      'number-needed-to-harm-nnh',
+      'attributable-risk-percent-arp',
+      'population-attributable-risk-par',
+      'treynor-ratio-calculator',
+      'information-ratio-calculator',
+      'ulcer-index-calculator',
+      'roy-worst-case-ratio',
+      'top-k-accuracy-calculator',
+      'discounted-cumulative-gain-dcg',
+      'macro-micro-f1-score',
+      'brier-score-decomposition',
+      'gamma-difference-distribution',
+      'folded-cauchy-distribution',
+      'log-pearson-type-iii',
+      'cp-process-capability-index',
+      'v-mask-cusum-spc-chart',
+      'moving-range-mr-chart',
+      'geary-c-bivariate-spatial',
+      'cross-variogram-co-kriging',
+      'mood-median-test-multi-group',
+      'somers-d-xy-directional',
+      'goodman-kruskal-tau',
+      'lord-wingersky-algorithm-irt',
     ]);
-    expect(calculatorPages.length).toBe(400);
+    expect(calculatorPages.length).toBe(425);
   });
 
   it('renders static HTML with canonical metadata, math formulas, code snippets, JSON-LD, and open CTAs', () => {
