@@ -11378,6 +11378,633 @@ export const calculatorPages = [
     ],
     workbenchId: 'bartlett_test',
   },
+
+  // --- 25 EXPANSION CALCULATORS (451 - 475) ---
+  {
+    slug: 'kl-divergence-continuous-gaussian',
+    title: 'Multivariate Gaussian KL divergence calculator',
+    family: 'Vector distances & embedding metrics',
+    description: 'Calculate Kullback-Leibler (KL) divergence D_KL(P || Q) between two multivariate Gaussian distributions N(μ₁, Σ₁) and N(μ₂, Σ₂).',
+    keywords: ['KL divergence calculator', 'multivariate gaussian KL', 'Kullback Leibler gaussian', 'distribution distance KL', 'variational inference KL'],
+    inputs: ['Mean vector μ₁ & covariance Σ₁', 'Mean vector μ₂ & covariance Σ₂'],
+    example: { a: ['μ₁ = [0, 0], Σ₁ = [[1, 0], [0, 1]]', 'μ₂ = [1, 1], Σ₂ = [[2, 0.5], [0.5, 2]]'], result: 'KL Divergence D_KL(P || Q) = 0.574 nats (Measures relative entropy information loss).' },
+    formula: 'D_{KL}(P || Q) = 1/2 [ tr(Σ₂⁻¹ Σ₁) + (μ₂ - μ₁)ᵀ Σ₂⁻¹ (μ₂ - μ₁) - k + ln(|Σ₂| / |Σ₁|) ]',
+    code: {
+      python: `import numpy as np\ndef gaussian_kl(mu1, cov1, mu2, cov2):\n    k = len(mu1)\n    inv_cov2 = np.linalg.inv(cov2)\n    diff = mu2 - mu1\n    tr_term = np.trace(inv_cov2 @ cov1)\n    quad_term = diff.T @ inv_cov2 @ diff\n    det_term = np.log(np.linalg.det(cov2) / np.linalg.det(cov1))\n    return 0.5 * (tr_term + quad_term - k + det_term)`,
+      r: `library(statmod)\n# Compute multivariate Gaussian KL divergence`,
+      ts: `import { gaussianKLDivergence } from '@statlab/core';\nconst kl = gaussianKLDivergence(mu1, cov1, mu2, cov2);`,
+    },
+    useCases: [
+      'Evaluating latent space regularization loss in Variational Autoencoders (VAEs).',
+      'Measuring probability distribution shift between continuous Gaussian feature embeddings.'
+    ],
+    when: 'Use when calculating exact relative entropy between continuous multivariate normal distributions.',
+    cautions: [
+      'KL divergence is asymmetric: D_KL(P || Q) ≠ D_KL(Q || P).',
+      'Covariance matrices Σ₁ and Σ₂ must be positive definite.'
+    ],
+    workbenchId: 'gaussian_kl_div',
+  },
+  {
+    slug: 'soergel-distance-calculator',
+    title: 'Soergel distance metric calculator',
+    family: 'Vector distances & embedding metrics',
+    description: 'Calculate Soergel distance D_S(u, v) measuring complement of Ruzicka similarity for non-negative feature vectors.',
+    keywords: ['Soergel distance calculator', 'Ruzicka distance', 'non negative vector metric', 'Soergel similarity metric', 'L1 ratio distance'],
+    inputs: ['Vector u (non-negative coordinates)', 'Vector v (non-negative coordinates)'],
+    example: { a: ['u = [10, 20, 30]', 'v = [15, 15, 40]'], result: 'Soergel Distance D_S(u, v) = 0.231 (1 - Ruzicka Index = 1 - 0.769).' },
+    formula: 'D_S(u, v) = ∑ |u_i - v_i| / ∑ max(u_i, v_i)',
+    code: {
+      python: `import numpy as np\ndef soergel_distance(u, v):\n    return np.sum(np.abs(u - v)) / np.sum(np.maximum(u, v))`,
+      r: `library(philentropy)\ndistance(rbind(u, v), method = "soergel")`,
+      ts: `import { soergelDistance } from '@statlab/core';\nconst d = soergelDistance([10, 20, 30], [15, 15, 40]);`,
+    },
+    useCases: [
+      'Comparing non-negative word frequency vectors in natural language processing.',
+      'Ecological community composition dissimilarity analysis.'
+    ],
+    when: 'Use for non-negative quantitative vectors where L1 scale-proportional difference is desired.',
+    cautions: [
+      'Vectors must contain non-negative elements.',
+      'Satisfies triangle inequality metric properties.'
+    ],
+    workbenchId: 'soergel_dist',
+  },
+  {
+    slug: 'canberra-distance-calculator',
+    title: 'Canberra distance weighted vector metric calculator',
+    family: 'Vector distances & embedding metrics',
+    description: 'Calculate Canberra distance d_C(u, v) measuring weighted sum of absolute fractional differences between coordinate pairs.',
+    keywords: ['Canberra distance calculator', 'weighted vector distance', 'fractional absolute distance', 'Canberra metric', 'sparse vector distance'],
+    inputs: ['Vector u coordinates', 'Vector v coordinates'],
+    example: { a: ['u = [1, 5, 0, 10]', 'v = [2, 5, 1, 15]'], result: 'Canberra Distance d_C(u, v) = 1/3 + 0 + 1 + 1/5 = 1.533.' },
+    formula: 'd_C(u, v) = ∑_{i=1}^n |u_i - v_i| / ( |u_i| + |v_i| )',
+    code: {
+      python: `from scipy.spatial.distance import canberra\nd = canberra([1, 5, 0, 10], [2, 5, 1, 15])\nprint(f"Canberra={d:.4f}")`,
+      r: `dist(rbind(u, v), method = "canberra")`,
+      ts: `import { canberraDistance } from '@statlab/core';\nconst d = canberraDistance([1, 5, 0, 10], [2, 5, 1, 15]);`,
+    },
+    useCases: [
+      'Measuring distance between sparse frequency vectors near zero origin.',
+      'Intrusion detection analysis comparing system call frequency profiles.'
+    ],
+    when: 'Use when differences near zero values should contribute heavily to overall distance.',
+    cautions: [
+      'If both u_i and v_i are zero, term 0/0 is conventionally evaluated as 0.',
+      'Sensitive to small absolute variations near zero.'
+    ],
+    workbenchId: 'canberra_dist',
+  },
+  {
+    slug: 'chebyshev-distance-calculator',
+    title: 'Chebyshev distance (L_infinity norm) calculator',
+    family: 'Vector distances & embedding metrics',
+    description: 'Calculate Chebyshev distance d_∞(u, v) measuring maximum absolute coordinate difference across vector dimensions.',
+    keywords: ['Chebyshev distance calculator', 'L infinity distance', 'maximum coordinate distance', 'chessboard distance', 'uniform norm distance'],
+    inputs: ['Vector u coordinates', 'Vector v coordinates'],
+    example: { a: ['u = [2, 8, -3, 5]', 'v = [4, 1, 0, 6]'], result: 'Coordinate differences: [2, 7, 3, 1]. Chebyshev Distance d_∞ = 7.0 (Maximum coordinate difference).' },
+    formula: 'd_∞(u, v) = max_i |u_i - v_i|',
+    code: {
+      python: `from scipy.spatial.distance import chebyshev\nd = chebyshev([2, 8, -3, 5], [4, 1, 0, 6])\nprint(f"Chebyshev={d:.4f}")`,
+      r: `dist(rbind(u, v), method = "maximum")`,
+      ts: `import { chebyshevDistance } from '@statlab/core';\nconst d = chebyshevDistance([2, 8, -3, 5], [4, 1, 0, 6]);`,
+    },
+    useCases: [
+      'Calculating chessboard movement distance and grid robot motion paths.',
+      'Evaluating maximum worst-case coordinate deviation in multidimensional tolerance specifications.'
+    ],
+    when: 'Use when the maximum single-coordinate difference determines overall distance.',
+    cautions: [
+      'Ignores cumulative differences in other non-maximal coordinates.',
+      'Special case of Minkowski distance as p → ∞.'
+    ],
+    workbenchId: 'chebyshev_dist',
+  },
+  {
+    slug: 'nelson-aalen-cumulative-hazard',
+    title: 'Nelson-Aalen cumulative hazard estimator calculator',
+    family: 'Survival & event history analysis',
+    description: 'Calculate Nelson-Aalen non-parametric cumulative hazard rate H(t) and variance Var(H(t)) for censored survival data.',
+    keywords: ['Nelson Aalen calculator', 'cumulative hazard estimator', 'nonparametric hazard rate', 'survival hazard H(t)', 'Aalen hazard variance'],
+    inputs: ['Event times t_i', 'Event status (1=Event, 0=Censored)'],
+    example: { a: ['Event times t = [4, 7, 9, 12, 15]', 'At t=9: Events d_j=1, At-risk n_j=18'], result: 'Cumulative Hazard H(9) = 0.245, Nelson-Aalen Estimated Survival S(9) = exp(-0.245) = 0.783.' },
+    formula: 'H(t) = ∑_{t_j ≤ t} (d_j / n_j),  Var(H(t)) = ∑_{t_j ≤ t} (d_j / n_j²)',
+    code: {
+      python: `from lifelines import NelsonAalenFitter\nnaf = NelsonAalenFitter().fit(durations, event_observed)\nprint(naf.cumulative_hazard_)`,
+      r: `library(survival)\nsurvfit(Surv(time, status) ~ 1, type = "aalen")`,
+      ts: `import { nelsonAalenHazard } from '@statlab/core';\nconst H = nelsonAalenHazard(timesArray, statusArray);`,
+    },
+    useCases: [
+      'Estimating non-parametric hazard rates for censored clinical trial cohorts.',
+      'Calculating hardware failure rate acceleration over component lifetime.'
+    ],
+    when: 'Use when estimating cumulative hazard rate directly without parametric distributional assumptions.',
+    cautions: [
+      'Nelson-Aalen estimate H(t) is step-wise monotonically non-decreasing.',
+      'S_NA(t) = exp(-H(t)) is asymptotically equivalent to Kaplan-Meier estimator.'
+    ],
+    workbenchId: 'nelson_aalen_hazard',
+  },
+  {
+    slug: 'frailty-model-shared-survival',
+    title: 'Shared frailty Cox survival model calculator',
+    family: 'Survival & event history analysis',
+    description: 'Calculate shared frailty Cox model random effect variance (θ), cluster-level frailty terms, and adjusted hazard ratios for clustered survival data.',
+    keywords: ['frailty model calculator', 'shared frailty survival', 'random effect Cox model', 'clustered survival analysis', 'gamma frailty theta'],
+    inputs: ['Cluster / Family ID vector', 'Survival times', 'Event status', 'Covariates X'],
+    example: { a: ['N = 300 subjects across 50 hospital clusters', 'Frailty variance θ = 0.42 (p = .015)'], result: 'Statistically significant cluster heterogeneity. Intra-cluster correlation ICC = 0.17.' },
+    formula: 'h_{ij}(t) = w_i * h_0(t) * exp(X_{ij} β),  where w_i ~ Gamma(1/θ, 1/θ)',
+    code: {
+      python: `from lifelines import CoxPHFitter\n# Cox model with cluster/frailty random effects`,
+      r: `library(survival)\ncoxph(Surv(time, status) ~ x + frailty(cluster_id), data = df)`,
+      ts: `import { sharedFrailtyModel } from '@statlab/core';\nconst res = sharedFrailtyModel(times, status, clusterIds, covariates);`,
+    },
+    useCases: [
+      'Analyzing multi-center clinical trials where patients are clustered within hospitals.',
+      'Modeling component failure times clustered within identical hardware server racks.'
+    ],
+    when: 'Use when survival observations are grouped into clusters and share unobserved cluster-level risk factors.',
+    cautions: [
+      'Ignoring frailty clustering understates standard errors of covariate coefficients.',
+      'Assumes frailty terms w_i follow Gamma or Lognormal distribution with mean 1.'
+    ],
+    workbenchId: 'shared_frailty_model',
+  },
+  {
+    slug: 'harrells-c-index-concordance',
+    title: 'Harrell’s C-index concordance discrimination calculator',
+    family: 'Survival & event history analysis',
+    description: 'Calculate Harrell’s C-index (concordance index) measuring predictive discrimination quality of survival and risk scoring models.',
+    keywords: ['Harrells C index', 'concordance index survival', 'C index calculator', 'survival model discrimination', 'ROC AUC survival'],
+    inputs: ['Predicted risk scores or survival times', 'Observed survival times', 'Event status (1=Event, 0=Censored)'],
+    example: { a: ['N = 150 test subjects', 'Concordant pairs = 4,200', 'Discrepant pairs = 1,100', 'Tied risk pairs = 50'], result: 'Harrell’s C-index = 0.785 (Good survival model predictive discrimination).' },
+    formula: 'C = ( Concordant_Pairs + 0.5 * Tied_Pairs ) / Total_Usable_Pairs',
+    code: {
+      python: `from lifelines.utils import concordance_index\nc = concordance_index(event_times, -predicted_scores, event_observed)\nprint(f"C-index={c:.4f}")`,
+      r: `library(survival)\nsurvConcordance(Surv(time, status) ~ risk_score)`,
+      ts: `import { harrellsCIndex } from '@statlab/core';\nconst c = harrellsCIndex(times, riskScores, status);`,
+    },
+    useCases: [
+      'Evaluating predictive accuracy of Cox proportional hazards models and clinical risk scores.',
+      'Benchmarking ML risk prediction algorithms on censored outcome datasets.'
+    ],
+    when: 'Use as the standard metric for assessing discrimination of survival models under right-censored data.',
+    cautions: [
+      'C-index = 0.50 indicates random performance; C-index = 1.0 indicates perfect discrimination.',
+      'Can be sensitive to heavy right-censoring at early time horizons.'
+    ],
+    workbenchId: 'harrells_c_index',
+  },
+  {
+    slug: 'spatial-durbin-model-sdm',
+    title: 'Spatial Durbin Model (SDM) direct and indirect impact calculator',
+    family: 'Spatial statistics & geostatistics',
+    description: 'Calculate Spatial Durbin Model (SDM) parameters, spatial autoregressive lag coefficient ρ, and direct, indirect, and total spatial spillover impacts.',
+    keywords: ['Spatial Durbin Model', 'SDM calculator', 'spatial autoregressive spillover', 'direct indirect spatial impact', 'spatial econometrics SDM'],
+    inputs: ['Response Y', 'Predictors X', 'Spatial weight matrix W'],
+    example: { a: ['N = 90 spatial units', 'Spatial autoregressive ρ = 0.35', 'Direct effect = 0.50', 'Indirect spillover = 0.28'], result: 'Total Spatial Impact = 0.78 (35.9% indirect spatial spillover effect).' },
+    formula: 'Y = ρ W Y + X β + W X θ + ε',
+    code: {
+      python: `import libpysal, spreg\n# Fit Spatial Durbin Model (SDM) with direct and indirect impacts`,
+      r: `library(spatialreg)\nlmequal <- lagsarlm(y ~ x, listw = spatial_weights, type = "Durbin")\nsummary(impacts(lmequal, listw = spatial_weights))`,
+      ts: `import { spatialDurbinModel } from '@statlab/core';\nconst res = spatialDurbinModel(yVals, xMatrix, weightsMatrix);`,
+    },
+    useCases: [
+      'Modeling simultaneous spatial dependence in both response variable Y and explanatory predictors X.',
+      'Evaluating regional economic policy spillovers across contiguous geographic jurisdictions.'
+    ],
+    when: 'Use SDM as a general spatial specification that nests both Spatial Lag (SAR) and Spatial Error (SEM) models.',
+    cautions: [
+      'Global spatial impacts require calculating matrix inverse (I - ρ W)⁻¹.',
+      'Spillover interpretations differ from OLS regression point coefficients.'
+    ],
+    workbenchId: 'spatial_durbin_sdm',
+  },
+  {
+    slug: 'anisotropy-variogram-ellipse',
+    title: 'Spatial variogram directional anisotropy ellipse calculator',
+    family: 'Spatial statistics & geostatistics',
+    description: 'Calculate spatial variogram directional anisotropy ratio, principal direction angle θ, and anisotropic range ellipse parameters for 2D geostatistics.',
+    keywords: ['anisotropy variogram calculator', 'directional variogram', 'anisotropy ratio ellipse', 'geostatistical anisotropy', 'spatial range anisotropy'],
+    inputs: ['Directional variogram ranges (Major range a_max, Minor range a_min)', 'Azimuth angle θ'],
+    example: { a: ['Major direction N30°E range a_max = 120m', 'Minor direction N120°E range a_min = 40m'], result: 'Anisotropy Ratio = 120 / 40 = 3.00, Rotation Angle θ = 30° (Geometric anisotropy).' },
+    formula: 'Ratio = a_{max} / a_{min},  Coord_Transformed = R(θ) * S(Ratio) * Coord',
+    code: {
+      python: `import gstat\n# Calculate anisotropic variogram surface and range ellipse`,
+      r: `library(gstat)\nvgm(psill = 10, model = "Sph", range = 120, anis = c(30, 0.33))`,
+      ts: `import { variogramAnisotropy } from '@statlab/core';\nconst res = variogramAnisotropy(120, 40, 30);`,
+    },
+    useCases: [
+      'Modeling directional spatial continuity in geological formations, wind patterns, and groundwater flow.',
+      'Transforming anisotropic spatial coordinates prior to Kriging interpolation.'
+    ],
+    when: 'Use when spatial autocorrelation range varies systematically depending on compass direction.',
+    cautions: [
+      'Distinguish geometric anisotropy (variable range, constant sill) from zonal anisotropy (variable sill).',
+      'Requires computing experimental variograms across multiple directional tolerance bands.'
+    ],
+    workbenchId: 'variogram_anisotropy',
+  },
+  {
+    slug: 'spatial-error-model-sem',
+    title: 'Spatial Error Model (SEM) regression calculator',
+    family: 'Spatial statistics & geostatistics',
+    description: 'Calculate Spatial Error Model (SEM) autoregressive error coefficient λ, spatial spatial error filtering, and Maximum Likelihood beta parameters.',
+    keywords: ['Spatial Error Model', 'SEM calculator', 'spatial autoregressive error', 'spatial error lambda', 'spatial error regression'],
+    inputs: ['Response Y', 'Predictors X', 'Spatial weight matrix W'],
+    example: { a: ['N = 80 spatial regions', 'Spatial error coefficient λ = 0.42 (p < .001)'], result: 'Spatial error dependence detected. OLS standard error bias corrected via Maximum Likelihood SEM.' },
+    formula: 'Y = X β + u,  u = λ W u + ε',
+    code: {
+      python: `import libpysal, spreg\n# Fit Spatial Error Model (SEM) via Maximum Likelihood\n# sem = spreg.ML_Error(y, x, w)`,
+      r: `library(spatialreg)\nerrorsarlm(y ~ x, listw = spatial_weights)`,
+      ts: `import { spatialErrorModel } from '@statlab/core';\nconst res = spatialErrorModel(yVals, xMatrix, weightsMatrix);`,
+    },
+    useCases: [
+      'Correcting OLS regression standard error bias when unobserved spatial variables introduce spatial autocorrelation into residuals.',
+      'Analyzing housing price determinants with spatially correlated error terms.'
+    ],
+    when: 'Use SEM when spatial autocorrelation is present in regression residuals rather than directly in the response variable.',
+    cautions: [
+      'Unlike Spatial Lag Model (SAR), SEM regression coefficients β retain direct OLS-like marginal interpretations.',
+      'Use Lagrange Multiplier (LM) tests to choose between SAR and SEM.'
+    ],
+    workbenchId: 'spatial_error_sem',
+  },
+  {
+    slug: 'accelerated-life-testing-alt',
+    title: 'Accelerated Life Testing (ALT) Arrhenius model calculator',
+    family: 'Statistical process control & quality engineering',
+    description: 'Calculate Arrhenius temperature acceleration factor (AF), activation energy (E_a), and extrapolated normal use lifetime for hardware reliability testing.',
+    keywords: ['Accelerated Life Testing', 'ALT calculator', 'Arrhenius acceleration factor', 'activation energy Ea', 'thermal stress acceleration'],
+    inputs: ['Stress temperature T_stress (°C or K)', 'Use temperature T_use (°C or K)', 'Activation energy E_a (eV)'],
+    example: { a: ['T_use = 25°C (298.15K)', 'T_stress = 85°C (358.15K)', 'E_a = 0.70 eV'], result: 'Arrhenius Acceleration Factor AF = 98.4. Testing 100 hours at 85°C equals ~9,840 hours at 25°C normal use.' },
+    formula: 'AF = exp[ (E_a / k) * ( 1/T_{use} - 1/T_{stress} ) ],  k = 8.617333 x 10⁻⁵ eV/K',
+    code: {
+      python: `import numpy as np\ndef arrhenius_af(t_use_c, t_stress_c, e_a=0.7):\n    k = 8.617333e-5\n    t_u = t_use_c + 273.15\n    t_s = t_stress_c + 273.15\n    return np.exp((e_a / k) * (1/t_u - 1/t_s))`,
+      r: `arrhenius_af <- function(t_u_c, t_s_c, e_a = 0.7) exp((e_a / 8.617333e-5) * (1/(t_u_c + 273.15) - 1/(t_s_c + 273.15)))`,
+      ts: `import { arrheniusAccelerationFactor } from '@statlab/core';\nconst af = arrheniusAccelerationFactor(25, 85, 0.70);`,
+    },
+    useCases: [
+      'Accelerating electronic component life testing by operating at elevated temperatures.',
+      'Extrapolating thermal degradation rates to normal operating conditions.'
+    ],
+    when: 'Use in accelerated life testing when thermal stress is the primary failure acceleration mechanism.',
+    cautions: [
+      'Temperatures must be converted to absolute Kelvin scale (K = °C + 273.15).',
+      'Assumes failure mechanism remains unchanged at elevated stress levels.'
+    ],
+    workbenchId: 'alt_arrhenius',
+  },
+  {
+    slug: 'plackett-burman-design-screening',
+    title: 'Plackett-Burman factor screening design calculator',
+    family: 'Statistical process control & quality engineering',
+    description: 'Calculate factor main effects, standard errors, and Pareto ranking from 12-run Plackett-Burman fractional factorial screening designs.',
+    keywords: ['Plackett Burman design', 'factor screening calculator', 'fractional factorial screening', 'Plackett Burman 12 run', 'DOE factor ranking'],
+    inputs: ['Factor matrix (+1/-1 levels for k factors)', 'Response values array Y'],
+    example: { a: ['N = 12 runs, k = 7 factors', 'Response Y = Process Yield %'], result: 'Factor 3 (Temperature): Effect = +8.5%, Factor 1 (Pressure): Effect = -5.2% (Identifies primary active factors).' },
+    formula: 'Effect_i = ( ∑ Y_{i+} - ∑ Y_{i-} ) / (N / 2)',
+    code: {
+      python: `import numpy as np\ndef plackett_burman_effects(design_matrix, response):\n    n = len(response)\n    return (design_matrix.T @ response) / (n / 2.0)`,
+      r: `library(DoE.wrapper)\npb_design <- pb(12, nfactors = 7)`,
+      ts: `import { plackettBurmanAnalysis } from '@statlab/core';\nconst effects = plackettBurmanAnalysis(designMatrix, responseArray);`,
+    },
+    useCases: [
+      'Efficiently screening a large number of potential process factors (k = 7 to 11) using minimal experimental runs (N = 12).',
+      'Identifying dominant input parameters in complex engineering simulations.'
+    ],
+    when: 'Use early in experimental design (DOE) when screening many factors to find the few main active drivers.',
+    cautions: [
+      'Plackett-Burman designs alias main effects with 2-factor interactions.',
+      'Designed for main effect screening only; follow up with full factorial or response surface designs.'
+    ],
+    workbenchId: 'plackett_burman_doe',
+  },
+  {
+    slug: 'mahalanobis-taguchi-system-mts',
+    title: 'Mahalanobis-Taguchi System (MTS) pattern recognition calculator',
+    family: 'Statistical process control & quality engineering',
+    description: 'Calculate Mahalanobis Distance (MD) space, Mahalanobis Space (MS) baseline, and Taguchi Signal-to-Noise (SN) ratios for multi-dimensional anomaly diagnosis.',
+    keywords: ['Mahalanobis Taguchi System', 'MTS calculator', 'Mahalanobis Space baseline', 'Taguchi SN ratio', 'multivariate pattern diagnosis'],
+    inputs: ['Healthy baseline reference matrix (N_ref x k)', 'Test sample vector x (k dimensions)'],
+    example: { a: ['k = 8 sensor features', 'Healthy baseline N_ref = 100', 'Test observation x'], result: 'Mahalanobis Distance MD = 1.15 (Healthy), Test observation y: MD = 14.80 (Anomalous multivariate fault detected).' },
+    formula: 'MD = (1/k) (x - μ)ᵀ C⁻¹ (x - μ),  where C is sample correlation matrix',
+    code: {
+      python: `import numpy as np\ndef mts_mahalanobis_distance(x, mean, inv_corr):\n    k = len(x)\n    z = (x - mean)\n    return (1.0 / k) * (z.T @ inv_corr @ z)`,
+      r: `library(MTS)\n# Compute Mahalanobis-Taguchi System distance space`,
+      ts: `import { mahalanobisTaguchiDistance } from '@statlab/core';\nconst md = mahalanobisTaguchiDistance(testVector, meanVector, invCorrMatrix);`,
+    },
+    useCases: [
+      'Multi-sensor health diagnostics for complex machinery and aerospace components.',
+      'Multivariate anomaly detection in cloud infrastructure server fleets.'
+    ],
+    when: 'Use MTS when establishing a multi-dimensional "healthy group" baseline space to diagnose abnormal multivariate patterns.',
+    cautions: [
+      'Standard MTS divides Mahalanobis distance by dimension count k so expected baseline MD ≈ 1.0.',
+      'Requires non-singular correlation matrix C.'
+    ],
+    workbenchId: 'mts_mahalanobis',
+  },
+  {
+    slug: 'samejima-graded-response-model',
+    title: 'Samejima Graded Response Model (GRM) IRT calculator',
+    family: 'Psychometrics & scale analysis',
+    description: 'Calculate item category boundary probabilities P_{jk}^*(θ) and category response probabilities P_{jk}(θ) for polytomous IRT rating scales.',
+    keywords: ['Graded Response Model', 'GRM IRT calculator', 'Samejima GRM', 'polytomous IRT model', 'Likert scale IRT'],
+    inputs: ['Ability level θ', 'Item discrimination a_j', 'Category threshold parameters b_{jk} (k = 1..K-1)'],
+    example: { a: ['5-point Likert item', 'Ability θ = +0.5', 'Discrimination a = 1.4', 'Thresholds b = [-1.5, -0.5, 0.5, 1.5]'], result: 'P(Category 3 | θ=0.5) = 0.354 (Most probable category response at θ=0.5).' },
+    formula: 'P_{jk}^*(θ) = 1 / [ 1 + exp( -a_j (θ - b_{jk}) ) ],  P_{jk}(θ) = P_{jk}^*(θ) - P_{j,k+1}^*(θ)',
+    code: {
+      python: `import numpy as np\ndef grm_category_prob(theta, a, thresholds):\n    # Cumulative probabilities P* for each threshold\n    p_star = [1.0] + [1 / (1 + np.exp(-a * (theta - b))) for b in thresholds] + [0.0]\n    # Category probabilities are differences\n    return [p_star[k] - p_star[k+1] for k in range(len(p_star)-1)]`,
+      r: `library(mirt)\nmirt(data, 1, itemtype = "graded")`,
+      ts: `import { samejimaGRM } from '@statlab/core';\nconst probs = samejimaGRM(0.5, 1.4, [-1.5, -0.5, 0.5, 1.5]);`,
+    },
+    useCases: [
+      'Analyzing multi-category ordered rating scales (e.g. 5-point Likert survey responses) in psychometric test development.',
+      'Evaluating LLM human preference Likert ratings using item response theory.'
+    ],
+    when: 'Use Samejima’s GRM when questionnaire items have ordered polytomous response options.',
+    cautions: [
+      'Threshold parameters b_{jk} must be strictly ordered: b_{j1} < b_{j2} < ... < b_{j,K-1}.',
+      'Sum of category probabilities across all options for an item equals 1.0.'
+    ],
+    workbenchId: 'samejima_grm',
+  },
+  {
+    slug: 'sem-path-coefficient-z-test',
+    title: 'SEM path coefficient standardized direct effect calculator',
+    family: 'Psychometrics & scale analysis',
+    description: 'Calculate standardized path coefficients (β), standard errors, Z-statistics, and direct/indirect/total effects for Structural Equation Models (SEM).',
+    keywords: ['SEM path coefficient', 'structural equation path calculator', 'standardized direct effect', 'indirect effect mediation', 'SEM path significance'],
+    inputs: ['Unstandardized path coefficient b', 'Standard error SE', 'Std Dev predictor SD_x', 'Std Dev outcome SD_y'],
+    example: { a: ['Unstandardized b = 0.35', 'SE = 0.08', 'SD_x = 2.0', 'SD_y = 5.0'], result: 'Standardized β = 0.35 * (2.0 / 5.0) = 0.140, Z = 4.375, p < .0001 (Statistically significant direct path).' },
+    formula: 'β_{std} = b * (σ_x / σ_y),  Z = b / SE,  Total_Effect = Direct + Indirect',
+    code: {
+      python: `import semopy\n# Fit SEM path model and calculate standardized direct/indirect effects`,
+      r: `library(lavaan)\nfit <- sem(model_syntax, data = df)\nstandardizedSolution(fit)`,
+      ts: `import { semPathCoefficient } from '@statlab/core';\nconst res = semPathCoefficient(0.35, 0.08, 2.0, 5.0);`,
+    },
+    useCases: [
+      'Evaluating direct and indirect mediation paths in complex structural equation models.',
+      'Quantifying relative causal impact of system design parameters on user retention.'
+    ],
+    when: 'Use in SEM path analysis to compare effect sizes of different paths on standardized scales.',
+    cautions: [
+      'Indirect effect standard errors require Sobel test or bootstrap confidence intervals.',
+      'Check overall model fit indices (CFI, TLI, RMSEA) before interpreting path coefficients.'
+    ],
+    workbenchId: 'sem_path_coef',
+  },
+  {
+    slug: 'guttman-scalogram-reproducibility',
+    title: 'Guttman scalogram Coefficient of Reproducibility (C_R) calculator',
+    family: 'Psychometrics & scale analysis',
+    description: 'Calculate Guttman scalogram Coefficient of Reproducibility (C_R) and Minimum Marginal Reproducibility (MMR) for deterministic scale analysis.',
+    keywords: ['Guttman scale calculator', 'Coefficient of Reproducibility', 'Guttman scalogram CR', 'MMR Guttman', 'deterministic scale analysis'],
+    inputs: ['Binary response matrix (N subjects x K items)'],
+    example: { a: ['N = 50 subjects, K = 5 items', 'Total error responses E = 12'], result: 'Coefficient of Reproducibility C_R = 1 - (12 / (50 * 5)) = 0.952 (Exceeds 0.90 Guttman scalability threshold).' },
+    formula: 'C_R = 1 - ( E / (N * K) ),  MMR = ∑ max(p_j, 1 - p_j) / K',
+    code: {
+      python: `import numpy as np\ndef guttman_cr(response_matrix):\n    # Calculate Guttman Coefficient of Reproducibility\n    n, k = response_matrix.shape\n    # Ideal Guttman pattern reconstruction and error count E calculation\n    return 1.0 - (errors / (n * k))`,
+      r: `library(RcmdrPlugin.HH)\n# Compute Guttman scale reproducibility`,
+      ts: `import { guttmanScalogram } from '@statlab/core';\nconst cr = guttmanScalogram(binaryMatrix);`,
+    },
+    useCases: [
+      'Evaluating whether a set of binary test items forms a strictly hierarchical uni-dimensional scale (where endorsing item k implies endorsing all easier items 1..k-1).',
+      'Assessing cumulative skill progression in competency assessments.'
+    ],
+    when: 'Use to test if survey items follow a deterministic cumulative ordering.',
+    cautions: [
+      'C_R ≥ 0.90 is required to claim a valid Guttman scale.',
+      'C_R should significantly exceed Minimum Marginal Reproducibility (MMR) to prove true scalability beyond item popularity margins.'
+    ],
+    workbenchId: 'guttman_scalogram',
+  },
+  {
+    slug: 'wavelet-packet-transform-wpt',
+    title: 'Wavelet Packet Transform (WPT) energy entropy calculator',
+    family: 'Signal processing & wavelet analysis',
+    description: 'Calculate Wavelet Packet Transform (WPT) full binary tree decomposition subband energies and Shannon entropy.',
+    keywords: ['Wavelet Packet Transform', 'WPT calculator', 'wavelet packet entropy', 'subband energy decomposition', 'WPT best tree'],
+    inputs: ['Signal array x(t)', 'Decomposition depth level J', 'Wavelet family (e.g. db4, sym8)'],
+    example: { a: ['Signal N = 1,024 samples', 'Decomposition depth J = 3 (8 subbands)'], result: 'Subband 3 Energy = 42.5%, Subband 7 Energy = 28.1%. WPT Shannon Entropy = 1.48 bits.' },
+    formula: 'E_{j,k} = ∑ |d_{j,k}[n]|²,  Entropy = - ∑ p_i ln(p_i),  where p_i = E_{j,i} / E_{total}',
+    code: {
+      python: `import pywt\nwp = pywt.WaveletPacket(data=signal_data, wavelet='db4', mode='symmetric', maxlevel=3)\nnodes = [node.path for node in wp.get_level(3, 'natural')]\nenergies = [np.sum(wp[node].data**2) for node in nodes]`,
+      r: `library(waveslim)\nwp.series(signal_data, wf = "la8", J = 3)`,
+      ts: `import { waveletPacketTransform } from '@statlab/core';\nconst wpt = waveletPacketTransform(signalArray, 3, 'db4');`,
+    },
+    useCases: [
+      'Detailed subband frequency decomposition of high-frequency acoustic and vibration signals.',
+      'Extracting wavelet packet feature vectors for audio classification ML models.'
+    ],
+    when: 'Use WPT when both high-frequency and low-frequency components require equal frequency resolution (unlike standard Discrete Wavelet Transform DWT which decomposes only low frequencies).',
+    cautions: [
+      'WPT produces 2^J subbands at decomposition level J.',
+      'Select best tree based on entropy minimization.'
+    ],
+    workbenchId: 'wpt_wavelet_packet',
+  },
+  {
+    slug: 'graph-degree-centrality-distribution',
+    title: 'Network graph degree, closeness, and eigenvector centrality calculator',
+    family: 'Network analysis & graph metrics',
+    description: 'Calculate node degree centrality, closeness centrality, betweenness centrality, and eigenvector centrality distributions for network graphs.',
+    keywords: ['graph centrality calculator', 'degree centrality network', 'closeness centrality', 'betweenness centrality', 'eigenvector centrality graph'],
+    inputs: ['Graph adjacency matrix A (N x N)', 'Graph type (Directed, Undirected)'],
+    example: { a: ['Graph N = 50 nodes, E = 180 edges'], result: 'Node 12: Degree Centrality = 0.367, Closeness = 0.582, Betweenness = 0.142, Eigenvector = 0.410 (Primary hub node).' },
+    formula: 'C_D(v) = deg(v) / (N - 1),  C_C(v) = (N - 1) / ∑_u d(v, u),  A x = λ x',
+    code: {
+      python: `import networkx as nx\nG = nx.from_numpy_array(adj_matrix)\ndeg_cent = nx.degree_centrality(G)\nclose_cent = nx.closeness_centrality(G)\neig_cent = nx.eigenvector_centrality(G)`,
+      r: `library(igraph)\ndegree(g, normalized = TRUE); closeness(g); eigen_centrality(g)$vector`,
+      ts: `import { graphCentrality } from '@statlab/core';\nconst res = graphCentrality(adjMatrix);`,
+    },
+    useCases: [
+      'Identifying influential hub nodes in social networks, financial transaction graphs, and microservice dependency topology.',
+      'Measuring vulnerability of network architecture to targeted node failures.'
+    ],
+    when: 'Use to evaluate node importance across structural network dimensions.',
+    cautions: [
+      'Eigenvector centrality requires connected graph component for convergence.',
+      'Betweenness centrality calculations scale O(N³) without Brandes algorithm optimization.'
+    ],
+    workbenchId: 'graph_centrality_metrics',
+  },
+  {
+    slug: 'copula-tail-dependence-gumbel-clayton',
+    title: 'Archimedean copula tail dependence calculator',
+    family: 'Copula analysis & joint tail dependence',
+    description: 'Calculate upper (λ_U) and lower (λ_L) tail dependence coefficients for Clayton, Gumbel, and Frank Archimedean copulas.',
+    keywords: ['copula tail dependence', 'Gumbel copula calculator', 'Clayton copula lower tail', 'joint tail dependence', 'Archimedean copula generator'],
+    inputs: ['Copula parameter θ', 'Copula family (Clayton, Gumbel, Frank, Gaussian, Student-t)'],
+    example: { a: ['Gumbel Copula parameter θ = 2.50'], result: 'Upper Tail Dependence λ_U = 2 - 2^(1/2.5) = 0.684, Lower Tail Dependence λ_L = 0.0 (Strong joint upper extreme dependence).' },
+    formula: 'Gumbel: λ_U = 2 - 2^{1/θ}, λ_L = 0;  Clayton: λ_U = 0, λ_L = 2^{-1/θ}',
+    code: {
+      python: `import numpy as np\ndef copula_tail_dependence(family, theta):\n    if family == 'gumbel':\n        return {'lambda_u': 2 - 2**(1/theta), 'lambda_l': 0.0}\n    elif family == 'clayton':\n        return {'lambda_u': 0.0, 'lambda_l': 2**(-1/theta)}`,
+      r: `library(copula)\n# Compute Archimedean copula tail dependence`,
+      ts: `import { copulaTailDependence } from '@statlab/core';\nconst res = copulaTailDependence('gumbel', 2.50);`,
+    },
+    useCases: [
+      'Modeling joint financial market crash probability (lower tail dependence via Clayton copula).',
+      'Modeling joint extreme weather exceedance events (upper tail dependence via Gumbel copula).'
+    ],
+    when: 'Use when modeling joint extreme tail dependencies between non-linearly correlated variables where linear Pearson correlation fails.',
+    cautions: [
+      'Gumbel copula measures upper tail dependence only; Clayton copula measures lower tail dependence only.',
+      'Frank copula has zero tail dependence (λ_U = λ_L = 0).'
+    ],
+    workbenchId: 'copula_tail_dep',
+  },
+  {
+    slug: 'brown-forsythe-homogeneity-test',
+    title: 'Brown-Forsythe test for variance homogeneity calculator',
+    family: 'ANOVA & factorial analysis',
+    description: 'Calculate Brown-Forsythe median-based F-statistic and p-value for testing equality of group variances robust to non-normality.',
+    keywords: ['Brown Forsythe test', 'homogeneity of variance median', 'robust ANOVA variance test', 'Brown Forsythe F test', 'equal variance median test'],
+    inputs: ['k group sample arrays', 'Alpha level (0.05)'],
+    example: { a: ['3 Groups (n1=20, n2=20, n3=20)', 'Group medians: [12.0, 14.5, 18.2]'], result: 'Brown-Forsythe F = 1.42, df1 = 2, df2 = 57, p-value = .250 (Variances are homogeneous; ANOVA assumption met).' },
+    formula: 'F = [ ∑ n_i (z̄_{i·} - z̄_{··})² / (k - 1) ] / [ ∑ ∑ (z_{ij} - z̄_{i·})² / (N - k) ],  where z_{ij} = |x_{ij} - Median_i|',
+    code: {
+      python: `from scipy import stats\nstat, p = stats.levene(group1, group2, group3, center='median')\nprint(f"BF F={stat:.4f}, p={p:.4f}")`,
+      r: `library(car)\nleveneTest(value ~ group, data = df, center = median)`,
+      ts: `import { brownForsytheTest } from '@statlab/core';\nconst res = brownForsytheTest([group1, group2, group3]);`,
+    },
+    useCases: [
+      'Testing equal variance assumptions prior to ANOVA when data is skewed or heavy-tailed.',
+      'Verifying variance equality across hardware microbenchmark runs with outlier noise.'
+    ],
+    when: 'Use in preference to Bartlett’s test when data deviates from normality (Brown-Forsythe uses group medians, making it more robust than mean-based Levene’s test).',
+    cautions: [
+      'Brown-Forsythe test is equivalent to Levene’s test centered at the median (`center="median"`).',
+      'If test rejects null hypothesis, use Welch’s ANOVA.'
+    ],
+    workbenchId: 'brown_forsythe_test',
+  },
+  {
+    slug: 'response-surface-methodology-rsm',
+    title: 'Response Surface Methodology (RSM) central composite design calculator',
+    family: 'ANOVA & factorial analysis',
+    description: 'Calculate second-order polynomial response surface regression coefficients, stationary point coordinates, and canonical contour curvature analysis.',
+    keywords: ['Response Surface Methodology', 'RSM calculator', 'central composite design CCD', 'stationary point RSM', 'response surface optimization'],
+    inputs: ['Central Composite Design (CCD) matrix (+1, -1, α, 0 runs)', 'Response values array Y'],
+    example: { a: ['2-Factor Central Composite Design (N=13 runs)', 'Factors: Temp X1, Pressure X2'], result: 'Stationary Point: X1* = +0.42, X2* = -0.18. Predicted Maximum Response Y_max = 94.2% (Stationary point is a Maximum peak).' },
+    formula: 'Y = β₀ + ∑ β_i X_i + ∑ β_{ii} X_i² + ∑ ∑_{i<j} β_{ij} X_i X_j,  x_s = -1/2 B⁻¹ b',
+    code: {
+      python: `import statsmodels.api as sm\n# Fit second-order response surface regression model\n# Find stationary point x_s = -0.5 * inv(B) @ b`,
+      r: `library(rsm)\nrsm_model <- rsm(yield ~ SO(x1, x2), data = ccd_df)\ncanonical(rsm_model)`,
+      ts: `import { responseSurfaceAnalysis } from '@statlab/core';\nconst res = responseSurfaceAnalysis(designMatrix, responseArray);`,
+    },
+    useCases: [
+      'Optimizing industrial manufacturing process yield across continuous factor settings.',
+      'Tuning machine learning pipeline hyperparameter combinations to locate peak validation accuracy.'
+    ],
+    when: 'Use in experimental design (DOE) after screening factors to model second-order curvature and pinpoint optimal operating conditions.',
+    cautions: [
+      'Check eigenvalues of matrix B to verify whether stationary point is a Maximum (all negative), Minimum (all positive), or Saddle point (mixed signs).',
+      'Choice of axial distance α affects design rotatability.'
+    ],
+    workbenchId: 'rsm_response_surface',
+  },
+  {
+    slug: 'statistical-power-two-sample-t',
+    title: 'Two-sample t-test statistical power and sample size calculator',
+    family: 'Power & sample size',
+    description: 'Calculate statistical power (1 - β), required sample size per group (N), and minimum detectable effect size (Cohen’s d) for two-sample t-tests.',
+    keywords: ['statistical power calculator', 'sample size calculator t test', 't test power calculation', 'Cohen d power', 'alpha beta sample size'],
+    inputs: ['Effect size Cohen’s d', 'Significance level α (e.g. 0.05)', 'Desired power 1 - β (e.g. 0.80)', 'Sample size n₁ & n₂ (if calculating power)'],
+    example: { a: ['Target Cohen’s d = 0.50 (medium effect)', 'α = 0.05 (two-tailed)', 'Power = 0.80'], result: 'Required Sample Size N = 64 per group (128 total subjects) to achieve 80% power.' },
+    formula: 'Power = 1 - β = P( t_{df} > t_{α/2, df} | δ = d * √(n/2) )',
+    code: {
+      python: `from statsmodels.stats.power import TTestIndPower\nanalysis = TTestIndPower()\nn = analysis.solve_power(effect_size=0.5, power=0.8, alpha=0.05, ratio=1.0)\nprint(f"Required N per group={np.ceil(n):.0f}")`,
+      r: `library(pwr)\npwr.t.test(d = 0.5, power = 0.8, sig.level = 0.05, type = "two.sample")`,
+      ts: `import { tTestPower } from '@statlab/core';\nconst n = tTestPower({ d: 0.5, power: 0.8, alpha: 0.05 });`,
+    },
+    useCases: [
+      'Planning A/B test sample size requirements prior to launching production experiments.',
+      'Sizing clinical trial cohorts to ensure adequate statistical power.'
+    ],
+    when: 'Use prior to data collection to determine the sample size needed to detect a target effect size with specified statistical power.',
+    cautions: [
+      'Underpowered studies (power < 80%) suffer from high false negative risk (Type II error) and inflated effect size estimates (Winner’s Curse).',
+      'For unequal group sample sizes, specify allocation ratio n₂/n₁.'
+    ],
+    workbenchId: 'power_two_sample_t',
+  },
+  {
+    slug: 'clinical-trial-win-ratio',
+    title: 'Finkelstein-Schoenfeld clinical trial Win Ratio calculator',
+    family: 'Biostatistics, causal inference & risk metrics',
+    description: 'Calculate Win Ratio (WR), Win Odds, and 95% confidence intervals for prioritized composite endpoints using Finkelstein-Schoenfeld methodology.',
+    keywords: ['Win Ratio calculator', 'clinical trial Win Ratio', 'Finkelstein Schoenfeld', 'win odds composite endpoint', 'hierarchical win ratio'],
+    inputs: ['Treatment cohort pairs (N_pairs)', 'Prioritized outcomes (e.g. 1st: Mortality, 2nd: Hospitalizations, 3rd: Symptom Score)'],
+    example: { a: ['Total matched pairs = 1,000', 'Treatment Wins = 340', 'Control Wins = 210', 'Ties = 450'], result: 'Win Ratio WR = 340 / 210 = 1.619 (95% CI: 1.25 to 2.10, p = .0003). Treatment has 61.9% higher win rate.' },
+    formula: 'Win Ratio WR = N_{wins, treatment} / N_{wins, control},  Win Odds = (N_{wins, T} + 0.5 N_{ties}) / (N_{wins, C} + 0.5 N_{ties})',
+    code: {
+      python: `def calculate_win_ratio(wins_treatment, wins_control):\n    wr = wins_treatment / wins_control\n    # Variance and confidence interval calculation\n    return wr`,
+      r: `library(BuyseTest)\n# Compute Finkelstein-Schoenfeld Win Ratio`,
+      ts: `import { clinicalWinRatio } from '@statlab/core';\nconst wr = clinicalWinRatio(340, 210, 450);`,
+    },
+    useCases: [
+      'Evaluating clinical trials with composite hierarchical endpoints where clinical priority ranks outcomes (e.g. fatal events prioritized over non-fatal hospitalizations).',
+      'Analyzing multi-criteria user benchmark comparisons.'
+    ],
+    when: 'Use for composite trial outcomes when components have clear clinical hierarchy priorities.',
+    cautions: [
+      'Win Ratio evaluates pairs sequentially through outcome hierarchy until a winner is declared or a tie occurs.',
+      'Report Win Ratio along with absolute win proportions.'
+    ],
+    workbenchId: 'win_ratio_biostat',
+  },
+  {
+    slug: 'decision-curve-net-benefit',
+    title: 'Decision Curve Analysis (DCA) net benefit calculator',
+    family: 'Biostatistics, causal inference & risk metrics',
+    description: 'Calculate Decision Curve Analysis (DCA) standardized net benefit across clinical probability threshold preferences (p_t).',
+    keywords: ['Decision Curve Analysis', 'DCA calculator', 'net benefit decision curve', 'clinical utility risk model', 'threshold probability DCA'],
+    inputs: ['True Positives TP', 'False Positives FP', 'Total sample size N', 'Threshold probability p_t'],
+    example: { a: ['N = 1,000 subjects', 'TP = 80', 'FP = 120', 'Threshold probability p_t = 0.20'], result: 'Net Benefit NB = (80/1000) - (120/1000) * (0.20 / 0.80) = 0.050 (Outperforms Treat-All and Treat-None strategies).' },
+    formula: 'Net Benefit = (TP / N) - (FP / N) * [ p_t / (1 - p_t) ]',
+    code: {
+      python: `import numpy as np\ndef net_benefit(tp, fp, n, p_t):\n    return (tp / n) - (fp / n) * (p_t / (1 - p_t))`,
+      r: `library(dms)\ndca(formula = status ~ risk_score, data = df)`,
+      ts: `import { decisionCurveNetBenefit } from '@statlab/core';\nconst nb = decisionCurveNetBenefit(80, 120, 1000, 0.20);`,
+    },
+    useCases: [
+      'Evaluating clinical utility and net benefit of risk prediction models compared to default clinical strategies (Treat All vs Treat None).',
+      'Evaluating fraud prediction model threshold deployment trade-offs.'
+    ],
+    when: 'Use DCA to demonstrate that a prediction model adds clinical net benefit across range of patient risk threshold preferences.',
+    cautions: [
+      'Net benefit expresses clinical value in units of true positive equivalents per patient.',
+      'A model with high ROC-AUC may not provide positive net benefit at low threshold probabilities.'
+    ],
+    workbenchId: 'dca_net_benefit',
+  },
+  {
+    slug: 'e-value-unmeasured-confounding',
+    title: 'E-value unmeasured confounding sensitivity calculator',
+    family: 'Biostatistics, causal inference & risk metrics',
+    description: 'Calculate E-value for point estimate and confidence interval bound measuring minimum strength of unmeasured confounding required to explain away observed association.',
+    keywords: ['E value calculator', 'unmeasured confounding E value', 'sensitivity analysis confounding', 'observational study E value', 'VanderWeele E value'],
+    inputs: ['Observed Relative Risk (RR) or Odds Ratio (OR) or Hazard Ratio (HR)'],
+    example: { a: ['Observed Relative Risk RR = 2.50 (95% CI: 1.80 to 3.47)'], result: 'E-value for Point Estimate = 4.44, E-value for CI lower bound = 2.99. (An unmeasured confounder must be associated with both exposure and outcome by a risk ratio of 4.44-fold to explain away observed RR=2.50).' },
+    formula: 'E-value = RR + √( RR * (RR - 1) )  for RR ≥ 1',
+    code: {
+      python: `import numpy as np\ndef calculate_e_value(rr):\n    if rr < 1:\n        rr = 1 / rr\n    return rr + np.sqrt(rr * (rr - 1))\nprint(f"E-value={calculate_e_value(2.50):.2f}")`,
+      r: `library(EValue)\nevalue(RR(2.50), LC(1.80))`,
+      ts: `import { calculateEValue } from '@statlab/core';\nconst eVal = calculateEValue(2.50);`,
+    },
+    useCases: [
+      'Assessing sensitivity of observational epidemiological studies to potential unmeasured confounding bias.',
+      'Evaluating robustness of observational AB testing conclusions to hidden user group selection bias.'
+    ],
+    when: 'Use in observational studies to report how strong an unmeasured confounder would have to be to nullify observed effect.',
+    cautions: [
+      'For RR < 1, invert risk ratio (RR_star = 1/RR) before calculating E-value.',
+      'Calculate E-value for both point estimate and lower confidence limit bound.'
+    ],
+    workbenchId: 'e_value_confounding',
+  },
 ];
 
 export const CATEGORIES = [
@@ -11486,7 +12113,7 @@ export function getCalculatorCategory(p) {
   }
 
   // 4. Vector Distances & Embeddings
-  if (f.includes('vector distance') || s.includes('cosine-similarity') || s.includes('wasserstein') || s.includes('mahalanobis-distance') || s.includes('euclidean') || s.includes('bray-curtis') || s.includes('minkowski') || s.includes('jaccard') || s.includes('hamming') || s.includes('haversine') || s.includes('bhattacharyya') || s.includes('hellinger') || s.includes('gower') || s.includes('hopkins') || s.includes('overlap') || s.includes('poincare') || s.includes('jensen-shannon') || s.includes('total-variation')) {
+  if (f.includes('vector distance') || s.includes('cosine-similarity') || s.includes('wasserstein') || s.includes('mahalanobis-distance') || s.includes('euclidean') || s.includes('bray-curtis') || s.includes('minkowski') || s.includes('jaccard') || s.includes('hamming') || s.includes('haversine') || s.includes('bhattacharyya') || s.includes('hellinger') || s.includes('gower') || s.includes('hopkins') || s.includes('overlap') || s.includes('poincare') || s.includes('jensen-shannon') || s.includes('total-variation') || s.includes('soergel') || s.includes('canberra') || s.includes('chebyshev')) {
     return CATEGORIES.find((c) => c.slug === 'vector-distances-embeddings');
   }
 

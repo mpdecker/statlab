@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { calculatorPages, generateSeoCalculatorPages, renderCalculatorPage, renderSitemap } from '../scripts/generate-seo-calculators.mjs';
 
 describe('SEO calculator pages', () => {
-  it('declares the milestone 450 statistical calculator suite', () => {
+  it('declares the milestone 475 statistical calculator suite', () => {
     expect(calculatorPages.map((page) => page.slug)).toEqual([
       'welch-t-test',
       'student-t-test',
@@ -457,8 +457,33 @@ describe('SEO calculator pages', () => {
       'dunnett-post-hoc-test',
       'two-way-repeated-measures-anova',
       'equi-variance-bartlett-test',
+      'kl-divergence-continuous-gaussian',
+      'soergel-distance-calculator',
+      'canberra-distance-calculator',
+      'chebyshev-distance-calculator',
+      'nelson-aalen-cumulative-hazard',
+      'frailty-model-shared-survival',
+      'harrells-c-index-concordance',
+      'spatial-durbin-model-sdm',
+      'anisotropy-variogram-ellipse',
+      'spatial-error-model-sem',
+      'accelerated-life-testing-alt',
+      'plackett-burman-design-screening',
+      'mahalanobis-taguchi-system-mts',
+      'samejima-graded-response-model',
+      'sem-path-coefficient-z-test',
+      'guttman-scalogram-reproducibility',
+      'wavelet-packet-transform-wpt',
+      'graph-degree-centrality-distribution',
+      'copula-tail-dependence-gumbel-clayton',
+      'brown-forsythe-homogeneity-test',
+      'response-surface-methodology-rsm',
+      'statistical-power-two-sample-t',
+      'clinical-trial-win-ratio',
+      'decision-curve-net-benefit',
+      'e-value-unmeasured-confounding',
     ]);
-    expect(calculatorPages.length).toBe(450);
+    expect(calculatorPages.length).toBe(475);
   });
 
   it('renders static HTML with canonical metadata, math formulas, code snippets, JSON-LD, and open CTAs', () => {
