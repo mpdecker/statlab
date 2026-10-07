@@ -383,8 +383,32 @@ describe('SEO calculator pages', () => {
       'functional-data-analysis-fda-curve-registration',
       'wavelet-packet-transform-wpt',
       'graph-neural-network-over-smoothing-dirichlet',
+      'win-ratio-prioritized-outcomes',
+      'decision-curve-analysis-dca',
+      'e-value-unmeasured-confounding',
+      'number-needed-to-screen-nns',
+      'omega-ratio-calculator',
+      'sortino-ratio-calculator',
+      'calmar-ratio-calculator',
+      'maximum-drawdown-duration',
+      'hill-estimator-tail-index',
+      'mean-reciprocal-rank-mrr',
+      'mean-average-precision-map',
+      'expected-calibration-error-ece',
+      'perplexity-language-model',
+      'process-performance-ppk-calculator',
+      'np-chart-spc-defective-count',
+      'u-chart-spc-variable-area',
+      'spatial-cross-correlation-bivariate',
+      'bivariate-cross-k-function',
+      'half-normal-distribution-calculator',
+      'folded-normal-distribution-calculator',
+      'frechet-extreme-value-distribution',
+      'cliffs-delta-nonparametric-effect',
+      'vargha-delaney-a-effect-size',
+      'item-information-function-irt',
     ]);
-    expect(calculatorPages.length).toBe(376);
+    expect(calculatorPages.length).toBe(400);
   });
 
   it('renders static HTML with canonical metadata, math formulas, code snippets, JSON-LD, and open CTAs', () => {

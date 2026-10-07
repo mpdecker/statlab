@@ -9506,6 +9506,624 @@ export const calculatorPages = [
     ],
     workbenchId: 'graph_gnn_dirichlet',
   },
+
+  // --- BIOSTATISTICS & CLINICAL CAUSAL INFERENCE ---
+  {
+    slug: 'win-ratio-prioritized-outcomes',
+    title: 'Win Ratio calculator for prioritized composite endpoints',
+    family: 'Biostatistics, causal inference & risk metrics',
+    description: 'Calculate Pocock Win Ratio, win fractions, and 95% confidence intervals for prioritized composite outcomes in clinical trials and A/B tests.',
+    keywords: ['Win Ratio calculator', 'prioritized outcomes', 'Pocock Win Ratio', 'composite endpoints', 'matched pairs win ratio'],
+    inputs: ['Matched pairs data', 'Prioritized hierarchy (e.g. 1: Death, 2: Hospitalization, 3: Symptom score)', 'Alpha level (0.05)'],
+    example: { a: ['Total Pairs: 250', 'Treatment Wins: 110', 'Control Wins: 70', 'Ties: 70'], result: 'Win Ratio = 1.57 (95% CI: 1.16 - 2.13), p = .0034. Treatment significantly outperforms control.' },
+    formula: 'WR = N_{wins, treatment} / N_{wins, control}, SE(ln WR) = √[ (1/N_W_T + 1/N_W_C) + ties correction ]',
+    code: {
+      python: `import numpy as np\n# Win ratio calculation for matched pair outcomes\nwr = n_wins_treat / n_wins_ctrl\nse = np.sqrt(1/n_wins_treat + 1/n_wins_ctrl)\nci = np.exp(np.log(wr) + np.array([-1.96, 1.96])*se)`,
+      r: `library(WinRatio)\nwin.ratio(data, id = "pair_id", arm = "group", outcomes = c("death", "hosp", "symptom"))`,
+      ts: `import { winRatio } from '@statlab/core';\nconst res = winRatio(treatmentPairs, controlPairs);`,
+    },
+    useCases: [
+      'Evaluating clinical trial efficacy when mortality and hospitalization take priority over continuous health scores.',
+      'Analyzing multi-stage user conversion funnels with non-fatal user drops.'
+    ],
+    when: 'Use when analyzing composite endpoints where clinical or business events have a strict hierarchical importance rank.',
+    cautions: [
+      'Requires explicit pre-specification of outcome hierarchy before data unblinding.',
+      'Unmatched win ratios require variance adjustments (e.g. Finkelstein-Schoenfeld method).'
+    ],
+    workbenchId: 'win_ratio',
+  },
+  {
+    slug: 'decision-curve-analysis-dca',
+    title: 'Decision Curve Analysis (DCA) Net Benefit calculator',
+    family: 'Biostatistics, causal inference & risk metrics',
+    description: 'Calculate Net Benefit across probability threshold ranges (p_t) to evaluate clinical and diagnostic utility relative to Treat All and Treat None strategies.',
+    keywords: ['Decision Curve Analysis', 'DCA calculator', 'Net Benefit clinical', 'threshold probability p_t', 'clinical utility curve'],
+    inputs: ['True Positives (TP)', 'False Positives (FP)', 'Sample N', 'Threshold probability p_t (0.01 to 0.99)'],
+    example: { a: ['Sample N = 1000', 'TP = 85', 'FP = 120', 'Threshold p_t = 0.15 (15%)'], result: 'Net Benefit = (85/1000) - (120/1000) * (0.15 / 0.85) = 0.0638 (Higher net benefit than Treat All: 0.0412).' },
+    formula: 'Net Benefit = (TP / N) - (FP / N) * [ p_t / (1 - p_t) ]',
+    code: {
+      python: `def net_benefit(tp, fp, n, p_t):\n    return (tp / n) - (fp / n) * (p_t / (1 - p_t))`,
+      r: `library(dms)\ndca(outcome ~ prediction_model, data = df, threshold = seq(0, 0.5, 0.01))`,
+      ts: `import { decisionCurveAnalysis } from '@statlab/core';\nconst netBenefit = decisionCurveAnalysis(tp, fp, n, thresholdPt);`,
+    },
+    useCases: [
+      'Evaluating whether an AI diagnostic model improves clinical decision utility over standard screening guidelines.',
+      'Determining optimal decision threshold for automated fraud detection intervention.'
+    ],
+    when: 'Use to evaluate whether deploying a prediction model provides net clinical or economic benefit over default intervention strategies.',
+    cautions: [
+      'Net Benefit requires specifying realistic range of decision-maker threshold probabilities.',
+      'Does not account for non-monetary costs outside diagnostic false positives.'
+    ],
+    workbenchId: 'decision_curve_dca',
+  },
+  {
+    slug: 'e-value-unmeasured-confounding',
+    title: 'E-value calculator for unmeasured confounding sensitivity',
+    family: 'Biostatistics, causal inference & risk metrics',
+    description: 'Calculate the E-value minimum strength of association an unmeasured confounder must have with exposure and outcome to explain away an observed effect.',
+    keywords: ['E-value calculator', 'unmeasured confounding', 'sensitivity analysis causal', 'VanderWeele E-value', 'observed risk ratio'],
+    inputs: ['Observed Point Estimate (Risk Ratio RR, Odds Ratio OR, or Hazard Ratio HR)', 'Lower 95% Confidence Limit'],
+    example: { a: ['Observed RR = 2.45', 'Lower 95% CI limit = 1.78'], result: 'E-value for Point Estimate = 4.33, E-value for 95% CI Limit = 2.95. Unmeasured confounding must exceed RR 4.33 to explain away effect.' },
+    formula: 'E-value = RR + √(RR * (RR - 1))  (for RR ≥ 1)',
+    code: {
+      python: `import numpy as np\ndef evalue_rr(rr):\n    return rr + np.sqrt(rr * (rr - 1))\nprint(evalue_rr(2.45))`,
+      r: `library(EValue)\nevalue(RR(2.45), lo = 1.78)`,
+      ts: `import { calculateEValue } from '@statlab/core';\nconst res = calculateEValue(2.45, { lowerCi: 1.78 });`,
+    },
+    useCases: [
+      'Assessing sensitivity of observational study findings to omitted variable bias or unmeasured confounders.',
+      'Quantifying robustness of causal marketing intervention claims in non-randomized telemetry.'
+    ],
+    when: 'Use in observational studies to report how strong unmeasured confounders must be to nullify an observed association.',
+    cautions: [
+      'High E-value indicates robustness against weak confounding, but does not prove absence of confounding.',
+      'Appropriately transform Odds Ratios (OR) and Hazard Ratios (HR) before applying E-value formula.'
+    ],
+    workbenchId: 'e_value_confounding',
+  },
+  {
+    slug: 'number-needed-to-screen-nns',
+    title: 'Number Needed to Screen (NNS) calculator',
+    family: 'Biostatistics, causal inference & risk metrics',
+    description: 'Calculate Number Needed to Screen (NNS) to prevent one adverse outcome based on baseline disease prevalence, sensitivity, and treatment efficacy.',
+    keywords: ['Number Needed to Screen', 'NNS calculator', 'screening program efficacy', 'ARR screening', 'preventive medicine metric'],
+    inputs: ['Absolute Risk Reduction (ARR)', 'Disease Prevalence (p)', 'Screening Test Sensitivity'],
+    example: { a: ['Baseline Disease Risk = 0.05 (5%)', 'Treatment Risk Reduction = 0.40 (40%)', 'ARR = 0.02 (2%)'], result: 'NNS = 1 / ARR = 50. Exactly 50 individuals must be screened to prevent 1 adverse event.' },
+    formula: 'NNS = 1 / ARR = 1 / (Prevalence * Sensitivity * Relative_Benefit)',
+    code: {
+      python: `arr = 0.02\nnns = 1 / arr\nprint(f"NNS = {nns:.1f}")`,
+      r: `nns <- 1 / arr`,
+      ts: `import { calculateNNS } from '@statlab/core';\nconst nns = calculateNNS(0.02);`,
+    },
+    useCases: [
+      'Quantifying population-level resource allocation efficiency for preventive healthcare screening campaigns.',
+      'Evaluating user onboarding security check efficiency in high-risk transaction monitoring.'
+    ],
+    when: 'Use when assessing population screening efficiency to prevent a single targeted adverse outcome.',
+    cautions: [
+      'Always report accompanying 95% confidence bounds derived from ARR confidence intervals.',
+      'Does not incorporate financial costs of false positive follow-up diagnostic procedures.'
+    ],
+    workbenchId: 'nns_screening',
+  },
+
+  // --- TIME SERIES & FINANCIAL PERFORMANCE RATIOS ---
+  {
+    slug: 'omega-ratio-calculator',
+    title: 'Omega Ratio performance calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate the Keating-Shadwick Omega Ratio probability-weighted ratio of gains versus losses above a specified threshold return.',
+    keywords: ['Omega Ratio calculator', 'Keating Shadwick Omega', 'non-normal performance metric', 'threshold return L', 'gain loss ratio'],
+    inputs: ['Return series array', 'Minimum Acceptable Return / Threshold L (e.g. 0.00)'],
+    example: { a: ['Daily Returns: [0.012, -0.005, 0.018, 0.004, -0.002, 0.025]', 'Threshold L = 0.00'], result: 'Omega Ratio (L=0) = 8.43. Total probability-weighted gains exceed losses by 8.43x.' },
+    formula: 'Ω(L) = ∫_L^∞ (1 - F(r)) dr / ∫_-∞^L F(r) dr = [ Expected Gain > L ] / [ Expected Loss < L ]',
+    code: {
+      python: `import numpy as np\ndef omega_ratio(returns, threshold=0.0):\n    gains = np.sum(np.maximum(returns - threshold, 0))\n    losses = np.sum(np.maximum(threshold - returns, 0))\n    return gains / losses if losses > 0 else np.nan`,
+      r: `library(PerformanceAnalytics)\nOmega(returns, L = 0)`,
+      ts: `import { omegaRatio } from '@statlab/core';\nconst omega = omegaRatio(returnsSeries, 0.0);`,
+    },
+    useCases: [
+      'Evaluating asymmetric asset return distributions (crypto, options, algorithmic trading) where skewness and kurtosis depart from normality.',
+      'Benchmarking microservice SLA throughput compliance against target baseline thresholds.'
+    ],
+    when: 'Use instead of Sharpe ratio when return distributions exhibit severe skewness, fat tails, or non-normal properties.',
+    cautions: [
+      'Sensitive to choice of threshold L.',
+      'Requires adequate historical return observations to accurately integrate tail losses.'
+    ],
+    workbenchId: 'omega_ratio',
+  },
+  {
+    slug: 'sortino-ratio-calculator',
+    title: 'Sortino Ratio downside risk calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate the Sortino Ratio to evaluate excess return per unit of downside risk (downside deviation), ignoring upside volatility.',
+    keywords: ['Sortino Ratio calculator', 'downside deviation', 'downside risk ratio', 'MAR minimum acceptable return', 'excess return downside'],
+    inputs: ['Return series array', 'Risk-free rate / MAR (Minimum Acceptable Return)'],
+    example: { a: ['Mean Return = 14.5%', 'Risk-free rate MAR = 3.0%', 'Downside Deviation = 5.2%'], result: 'Sortino Ratio = (14.5 - 3.0) / 5.2 = 2.21 (High downside risk-adjusted efficiency).' },
+    formula: 'Sortino = (R_p - MAR) / σ_d, where σ_d = √[ (1/N) ∑_{r_t < MAR} (r_t - MAR)² ]',
+    code: {
+      python: `import numpy as np\ndef sortino_ratio(returns, mar=0.03/252):\n    excess = returns - mar\n    downside = np.sqrt(np.mean(np.minimum(excess, 0)**2))\n    return np.mean(excess) / downside * np.sqrt(252)`,
+      r: `library(PerformanceAnalytics)\nSortinoRatio(returns, MAR = 0.03/252)`,
+      ts: `import { sortinoRatio } from '@statlab/core';\nconst res = sortinoRatio(returns, { mar: 0.03 });`,
+    },
+    useCases: [
+      'Measuring risk-adjusted performance of investment strategies without penalizing positive upside volatility.',
+      'Evaluating cloud service throughput stability against minimum acceptable SLA targets.'
+    ],
+    when: 'Use when upside variance is desirable and investors care strictly about downside loss risk.',
+    cautions: [
+      'Downside deviation requires sufficient negative return periods for stable estimation.',
+      'Annualize daily Sortino ratios using √252 multiplication factor for downside deviation.'
+    ],
+    workbenchId: 'sortino_ratio',
+  },
+  {
+    slug: 'calmar-ratio-calculator',
+    title: 'Calmar Ratio drawdown-adjusted return calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate the Calmar Ratio comparing annualized compounding returns against Maximum Drawdown (MDD) over a 36-month window.',
+    keywords: ['Calmar Ratio calculator', 'maximum drawdown return', 'MDD ratio', 'hedge fund performance', 'drawdown risk adjusted'],
+    inputs: ['Annualized Compound Return (CAGR)', 'Maximum Peak-to-Trough Drawdown (MDD)'],
+    example: { a: ['Annualized CAGR = 22.4%', 'Maximum Drawdown MDD = 8.5%'], result: 'Calmar Ratio = 22.4 / 8.5 = 2.64 (Excellent peak-to-trough risk management).' },
+    formula: 'Calmar Ratio = Annualized Return (CAGR) / Maximum Drawdown |MDD|',
+    code: {
+      python: `def calmar_ratio(cagr, max_drawdown):\n    return cagr / abs(max_drawdown)`,
+      r: `library(PerformanceAnalytics)\nCalmarRatio(returns)`,
+      ts: `import { calmarRatio } from '@statlab/core';\nconst calmar = calmarRatio(0.224, 0.085);`,
+    },
+    useCases: [
+      'Evaluating systematic trading strategies and hedge fund resilience against catastrophic peak-to-trough drawdowns.',
+      'Monitoring API server throughput degradation during peak traffic spikes.'
+    ],
+    when: 'Use to evaluate long-term return potential relative to worst-case historical equity curve drawdowns.',
+    cautions: [
+      'Traditionally calculated over a rolling 36-month window; shorter timeframes underestimate true peak-to-trough drawdown.',
+      'One outlier drawdown period heavily depresses the Calmar ratio.'
+    ],
+    workbenchId: 'calmar_ratio',
+  },
+  {
+    slug: 'maximum-drawdown-duration',
+    title: 'Maximum Drawdown (MDD) and duration calculator',
+    family: 'Time series, volatility & econometrics',
+    description: 'Calculate Maximum Drawdown (MDD) peak-to-trough drop percentage and recovery duration length for equity curves and time series metrics.',
+    keywords: ['Maximum Drawdown calculator', 'MDD duration', 'peak to trough drop', 'underwater curve', 'drawdown recovery time'],
+    inputs: ['Cumulative value / equity curve time series array'],
+    example: { a: ['Peak value = $150,000', 'Trough value = $105,000', 'Recovery Peak = $152,000'], result: 'Max Drawdown MDD = -30.0%, Drawdown Duration = 42 days (Trough: Day 18, Full Recovery: Day 42).' },
+    formula: 'MDD_t = (Peak_t - Value_t) / Peak_t,  MDD = max_t(MDD_t)',
+    code: {
+      python: `import numpy as np\ndef max_drawdown(vals):\n    peaks = np.maximum.accumulate(vals)\n    dd = (vals - peaks) / peaks\n    return np.min(dd)`,
+      r: `library(PerformanceAnalytics)\nmaxDrawdown(returns)`,
+      ts: `import { maxDrawdown } from '@statlab/core';\nconst res = maxDrawdown(equitySeries);`,
+    },
+    useCases: [
+      'Quantifying worst-case loss magnitude and recovery time in quantitative trading portfolios.',
+      'Analyzing system recovery time after infrastructure failure outages.'
+    ],
+    when: 'Use whenever reporting time series peak-to-trough vulnerability and underwater recovery dynamics.',
+    cautions: [
+      'Historical MDD does not guarantee future drawdown bounds during unseen tail events.',
+      'Ensure input series represents cumulative valuation levels rather than period returns.'
+    ],
+    workbenchId: 'max_drawdown',
+  },
+
+  // --- PROBABILITY DISTRIBUTIONS & HEAVY TAILS ---
+  {
+    slug: 'hill-estimator-tail-index',
+    title: 'Hill Estimator heavy-tail index calculator',
+    family: 'Probability distributions & dimensionality reduction',
+    description: 'Calculate the Hill Estimator for heavy-tailed power-law distribution tail index (α) and Pareto tail exponent k.',
+    keywords: ['Hill Estimator calculator', 'tail index alpha', 'heavy tailed distribution', 'power law exponent', 'extreme quantile tail'],
+    inputs: ['Sample data array', 'Number of upper order statistics k (threshold rank)'],
+    example: { a: ['Upper 5% Data: [120, 145, 180, 250, 410, 890]', 'Order Statistics k = 20'], result: 'Hill Tail Index α ≈ 2.14 (Heavy-tailed Pareto distribution with infinite variance if α ≤ 2).' },
+    formula: 'γ = (1/k) ∑_{i=1}^k ln(X_{(n-i+1)} / X_{(n-k)}),  α = 1 / γ',
+    code: {
+      python: `import numpy as np\ndef hill_estimator(data, k):\n    sorted_data = np.sort(data)\n    top_k = sorted_data[-k:]\n    gamma = np.mean(np.log(top_k / sorted_data[-k-1]))\n    return 1 / gamma`,
+      r: `library(evir)\nhill(data, option = "alpha")`,
+      ts: `import { hillEstimator } from '@statlab/core';\nconst alpha = hillEstimator(data, k);`,
+    },
+    useCases: [
+      'Estimating tail risk exponents in financial returns, network traffic bursts, and operational outage durations.',
+      'Quantifying power-law frequency of extreme API latency outliers.'
+    ],
+    when: 'Use to estimate power-law tail decay exponent for heavy-tailed data exceeding high thresholds.',
+    cautions: [
+      'Highly sensitive to selection of k (number of extreme order statistics); inspect Hill plot for stable plateau.',
+      'Assumes data above threshold follow a Pareto power-law tail.'
+    ],
+    workbenchId: 'hill_estimator',
+  },
+
+  // --- AI / ML EVALUATION & RETRIEVAL ---
+  {
+    slug: 'mean-reciprocal-rank-mrr',
+    title: 'Mean Reciprocal Rank (MRR) RAG evaluation calculator',
+    family: 'AI / ML evaluation & mixture models',
+    description: 'Calculate Mean Reciprocal Rank (MRR) to evaluate search engines, recommendation systems, and RAG document retrieval performance.',
+    keywords: ['Mean Reciprocal Rank', 'MRR calculator', 'RAG evaluation metric', 'search rank evaluation', 'first relevant rank'],
+    inputs: ['Array of first relevant item ranks across Q queries: [rank_1, rank_2, ..., rank_Q]'],
+    example: { a: ['Query 1 rank = 1', 'Query 2 rank = 3', 'Query 3 rank = 2', 'Query 4 rank = 0 (not found)'], result: 'Reciprocal Ranks = [1.0, 0.333, 0.50, 0.0], MRR = (1.0 + 0.333 + 0.50 + 0) / 4 = 0.458' },
+    formula: 'MRR = (1 / |Q|) ∑_{i=1}^{|Q|} (1 / rank_i)',
+    code: {
+      python: `import numpy as np\ndef mrr(ranks):\n    return np.mean([1/r if r > 0 else 0 for r in ranks])\nprint(mrr([1, 3, 2, 0]))`,
+      r: `mrr <- mean(sapply(ranks, function(r) if (r > 0) 1/r else 0))`,
+      ts: `import { meanReciprocalRank } from '@statlab/core';\nconst mrrScore = meanReciprocalRank([1, 3, 2, 0]);`,
+    },
+    useCases: [
+      'Evaluating Vector DB retriever accuracy in LLM Retrieval-Augmented Generation (RAG) pipelines.',
+      'Benchmarking search result ranking relevance in e-commerce and documentation search engines.'
+    ],
+    when: 'Use when evaluating search algorithms where users care primarily about the position of the single first relevant result.',
+    cautions: [
+      'Focuses exclusively on the first relevant item; use MAP or NDCG if multiple relevant items matter per query.',
+      'Unmatched queries (no relevant result returned) must be scored as rank = 0 (reciprocal rank = 0).'
+    ],
+    workbenchId: 'mrr_retrieval',
+  },
+  {
+    slug: 'mean-average-precision-map',
+    title: 'Mean Average Precision (MAP@K) ranking calculator',
+    family: 'AI / ML evaluation & mixture models',
+    description: 'Calculate Mean Average Precision at K (MAP@K) for multi-item recommendation and information retrieval evaluation.',
+    keywords: ['Mean Average Precision', 'MAP@K calculator', 'information retrieval metric', 'precision at k', 'multi item ranking'],
+    inputs: ['Relevance lists per query (binary vectors 1=relevant, 0=irrelevant)', 'Cutoff rank K'],
+    example: { a: ['Query 1 predictions: [1, 0, 1, 0, 1] (AP = 0.733)', 'Query 2 predictions: [0, 1, 1, 0, 0] (AP = 0.583)'], result: 'MAP@5 = (0.733 + 0.583) / 2 = 0.658 (Strong multi-item retrieval precision).' },
+    formula: 'AP = ∑_{k=1}^K P(k) * rel(k) / N_{relevant},  MAP = (1/|Q|) ∑_{q=1}^{|Q|} AP_q',
+    code: {
+      python: `import numpy as np\ndef apk(actual, predicted, k=10):\n    score = 0.0\n    num_hits = 0.0\n    for i, p in enumerate(predicted[:k]):\n        if p in actual:\n            num_hits += 1.0\n            score += num_hits / (i + 1.0)\n    return score / min(len(actual), k)`,
+      r: `library(Metrics)\nmapk(actual_list, predicted_list, k = 5)`,
+      ts: `import { meanAveragePrecision } from '@statlab/core';\nconst mapScore = meanAveragePrecision(queryResults, { k: 5 });`,
+    },
+    useCases: [
+      'Benchmarking multi-document retrieval accuracy in enterprise search and RAG knowledge systems.',
+      'Evaluating top-K recommendation list precision in personalized content feeds.'
+    ],
+    when: 'Use when evaluating ranked search results containing multiple valid relevant items per query.',
+    cautions: [
+      'Requires binary relevance judgments (relevant vs irrelevant); use NDCG for graded multi-level relevance.',
+      'Set consistent K cutoff across model comparisons.'
+    ],
+    workbenchId: 'map_ranking',
+  },
+  {
+    slug: 'expected-calibration-error-ece',
+    title: 'Expected Calibration Error (ECE) neural net calculator',
+    family: 'AI / ML evaluation & mixture models',
+    description: 'Calculate Expected Calibration Error (ECE) and Maximum Calibration Error (MCE) to quantify neural network confidence score reliability.',
+    keywords: ['Expected Calibration Error', 'ECE calculator', 'model probability calibration', 'reliability diagram', 'confidence score error'],
+    inputs: ['Predicted probabilities (confidences)', 'True binary labels', 'Number of equal-width probability bins M (e.g. 10)'],
+    example: { a: ['Model Confidences = [0.95, 0.82, 0.61, 0.88, 0.70]', 'True Labels = [1, 1, 0, 1, 0]', 'Bins M = 5'], result: 'ECE = 0.084 (8.4% average discrepancy between predicted confidence and empirical accuracy).' },
+    formula: 'ECE = ∑_{m=1}^M (|B_m| / N) | acc(B_m) - conf(B_m) |',
+    code: {
+      python: `import numpy as np\ndef ece_score(probs, labels, n_bins=10):\n    bin_boundaries = np.linspace(0, 1, n_bins + 1)\n    ece = 0.0\n    for i in range(n_bins):\n        in_bin = (probs > bin_boundaries[i]) & (probs <= bin_boundaries[i+1])\n        if np.sum(in_bin) > 0:\n            acc = np.mean(labels[in_bin])\n            conf = np.mean(probs[in_bin])\n            ece += np.sum(in_bin) / len(probs) * np.abs(acc - conf)\n    return ece`,
+      r: `library(recalibration)\nece(predicted_probs, actual_labels, num_bins = 10)`,
+      ts: `import { expectedCalibrationError } from '@statlab/core';\nconst ece = expectedCalibrationError(confidences, labels, { bins: 10 });`,
+    },
+    useCases: [
+      'Measuring probability calibration of deep neural networks, LLM classification heads, and medical diagnostic classifiers.',
+      'Evaluating Platt scaling or isotonic regression post-processing recalibration efficacy.'
+    ],
+    when: 'Use to verify that a model outputting 90% confidence is actually correct 90% of the time.',
+    cautions: [
+      'Sensitive to the choice of bin count M and equal-width vs equal-mass binning schemes.',
+      'Uncalibrated overconfident models can produce falsely optimistic security or medical decisions.'
+    ],
+    workbenchId: 'ece_calibration',
+  },
+  {
+    slug: 'perplexity-language-model',
+    title: 'Perplexity (PPL) language model calculator',
+    family: 'AI / ML evaluation & mixture models',
+    description: 'Calculate Perplexity (PPL) and average cross-entropy loss per token to evaluate LLM language modeling fluency.',
+    keywords: ['Perplexity calculator', 'PPL LLM evaluation', 'language model loss', 'cross entropy exponent', 'token perplexity'],
+    inputs: ['Average negative log-likelihood per token (Cross-Entropy Loss L)', 'Total sequence length N tokens'],
+    example: { a: ['Cross-Entropy Loss L = 2.45 nats per token'], result: 'Perplexity PPL = exp(2.45) = 11.59 (On average, model is as uncertain as choosing between ~11.6 equiprobable tokens).' },
+    formula: 'PPL = exp( Cross_Entropy_Loss ) = exp( -(1/N) ∑_{i=1}^N ln P(w_i | w_{<i}) )',
+    code: {
+      python: `import numpy as np\ndef perplexity(loss):\n    return np.exp(loss)\nprint(f"PPL = {perplexity(2.45):.2f}")`,
+      r: `ppl <- exp(cross_entropy_loss)`,
+      ts: `import { calculatePerplexity } from '@statlab/core';\nconst ppl = calculatePerplexity(2.45);`,
+    },
+    useCases: [
+      'Evaluating Large Language Model (LLM) pre-training and fine-tuning loss convergence.',
+      'Comparing domain adaptation performance across specialized prompt templates and fine-tuned checkpoints.'
+    ],
+    when: 'Use to measure how well a probabilistic language model predicts a target text corpus.',
+    cautions: [
+      'PPL depends directly on tokenizer vocabulary size; models with different tokenizers cannot be compared by raw PPL.',
+      'Calculate loss using natural log (nats) to match `exp(loss)` formula.'
+    ],
+    workbenchId: 'ppl_language_model',
+  },
+
+  // --- SPC & QUALITY CONTROL ---
+  {
+    slug: 'process-performance-ppk-calculator',
+    title: 'Ppk and Pp process performance index calculator',
+    family: 'Statistical process control & quality engineering',
+    description: 'Calculate process performance indices Pp and Ppk based on total sample variance (overall process performance) versus specification limits (USL, LSL).',
+    keywords: ['Ppk calculator', 'Pp index', 'process performance index', 'overall process capability', 'Six Sigma Ppk'],
+    inputs: ['Upper Specification Limit (USL)', 'Lower Specification Limit (LSL)', 'Overall sample mean X̄', 'Overall sample standard deviation s (total SD)'],
+    example: { a: ['USL = 55.0', 'LSL = 45.0', 'Mean X̄ = 50.2', 'Total SD s = 1.15'], result: 'Pp = 1.45, Ppu = 1.39, Ppl = 1.51, Ppk = min(Ppu, Ppl) = 1.39 (Process meets 1.33 performance standard).' },
+    formula: 'Pp = (USL - LSL) / (6 * s),  Ppk = min[ (USL - X̄)/(3*s), (X̄ - LSL)/(3*s) ]',
+    code: {
+      python: `def calculate_ppk(usl, lsl, mean, sd):\n    ppu = (usl - mean) / (3 * sd)\n    ppl = (mean - lsl) / (3 * sd)\n    pp = (usl - lsl) / (6 * sd)\n    return pp, min(ppu, ppl)`,
+      r: `library(qcc)\n# Compute overall process performance Ppk using total sample variance`,
+      ts: `import { processPerformancePpk } from '@statlab/core';\nconst res = processPerformancePpk(55, 45, 50.2, 1.15);`,
+    },
+    useCases: [
+      'Evaluating total long-term process performance including shift and drift across multiple manufacturing batches.',
+      'Auditing infrastructure throughput stability against SLA upper and lower operational bounds.'
+    ],
+    when: 'Use Ppk (total sample SD) to evaluate actual overall historical performance, compared to Cpk (within-subgroup SD) for short-term potential capability.',
+    cautions: [
+      'Requires data collected over long enough timeframe to capture full process variation.',
+      'Data must be approximately normal for standard Ppk percentage interpretations.'
+    ],
+    workbenchId: 'ppk_performance',
+  },
+  {
+    slug: 'np-chart-spc-defective-count',
+    title: 'np-chart defective count SPC control chart calculator',
+    family: 'Statistical process control & quality engineering',
+    description: 'Calculate np-chart control limits (UCL, LCL, Center Line) for attribute quality control when sample sizes (n) are constant across subgroups.',
+    keywords: ['np chart calculator', 'defective count SPC', 'attribute control chart', 'np control limits', 'constant sample size SPC'],
+    inputs: ['Subgroup size n (constant)', 'Defective counts per subgroup array d_i'],
+    example: { a: ['Constant Subgroup size n = 100', '20 Subgroups total defectives D = 85', 'Average proportion p̄ = 0.0425'], result: 'Center Line CL = 4.25, UCL = 10.38, LCL = 0.00 (Process in statistical control).' },
+    formula: 'CL = n * p̄,  UCL = n*p̄ + 3√[ n*p̄(1 - p̄) ],  LCL = max(0, n*p̄ - 3√[ n*p̄(1 - p̄) ])',
+    code: {
+      python: `import numpy as np\ndef np_chart(defects, n):\n    p_bar = np.mean(defects) / n\n    cl = n * p_bar\n    sigma = np.sqrt(n * p_bar * (1 - p_bar))\n    ucl = cl + 3 * sigma\n    lcl = max(0, cl - 3 * sigma)\n    return cl, ucl, lcl`,
+      r: `library(qcc)\nqcc(defect_counts, type = "np", sizes = 100)`,
+      ts: `import { npControlChart } from '@statlab/core';\nconst limits = npControlChart(defectCounts, 100);`,
+    },
+    useCases: [
+      'Monitoring exact count of defective units in constant batch-size manufacturing runs.',
+      'Tracking daily API failure request counts in fixed-volume telemetry sampling.'
+    ],
+    when: 'Use np-chart when tracking defect counts (number of nonconforming items) and subgroup sample size n is strictly constant.',
+    cautions: [
+      'If subgroup sample sizes vary across inspection runs, switch to p-chart.',
+      'LCL is set to 0 if 3-sigma calculation yields negative bound.'
+    ],
+    workbenchId: 'spc_np_chart',
+  },
+  {
+    slug: 'u-chart-spc-variable-area',
+    title: 'u-chart variable sample size Poisson SPC chart calculator',
+    family: 'Statistical process control & quality engineering',
+    description: 'Calculate u-chart control limits for defects per unit when inspection area or sample sizes (n_i) vary between subgroups.',
+    keywords: ['u chart calculator', 'defects per unit SPC', 'variable sample size SPC', 'Poisson defect chart', 'u chart control limits'],
+    inputs: ['Defect counts c_i array', 'Sample sizes / inspection units n_i array'],
+    example: { a: ['Total Defects = 124', 'Total Inspection Units N = 450', 'Average defects per unit ū = 0.276'], result: 'Center Line ū = 0.276, Subgroup 1 (n=20): UCL = 0.627, LCL = 0.00 (Variable 3-sigma bounds).' },
+    formula: 'u_i = c_i / n_i,  ū = ∑ c_i / ∑ n_i,  UCL_i = ū + 3√(ū / n_i),  LCL_i = max(0, ū - 3√(ū / n_i))',
+    code: {
+      python: `import numpy as np\ndef u_chart(c, n):\n    u_bar = np.sum(c) / np.sum(n)\n    ucl = u_bar + 3 * np.sqrt(u_bar / n)\n    lcl = np.maximum(0, u_bar - 3 * np.sqrt(u_bar / n))\n    return u_bar, ucl, lcl`,
+      r: `library(qcc)\nqcc(defects, type = "u", sizes = sample_sizes)`,
+      ts: `import { uControlChart } from '@statlab/core';\nconst res = uControlChart(defectsArray, sizesArray);`,
+    },
+    useCases: [
+      'Monitoring defect frequency per square meter, length, or inspection area when inspection lot sizes vary.',
+      'Tracking microservice code error counts per 1,000 lines of modified code across varying PR sizes.'
+    ],
+    when: 'Use u-chart when counting total defects (Poisson distribution) and inspection subgroup sizes vary.',
+    cautions: [
+      'Each subgroup has its own individual upper and lower control limits based on its specific sample size n_i.',
+      'Distinguish between defects (total flaw count) and defectives (flawed item count).'
+    ],
+    workbenchId: 'spc_u_chart',
+  },
+
+  // --- SPATIAL STATISTICS ---
+  {
+    slug: 'spatial-cross-correlation-bivariate',
+    title: 'Bivariate spatial cross-correlation calculator',
+    family: 'Spatial statistics & geostatistics',
+    description: 'Calculate bivariate spatial cross-correlation between two spatial variables X and Y across geographical weight matrices.',
+    keywords: ['spatial cross correlation', 'bivariate spatial autocorrelation', 'spatial cross lag', 'Bivariate Moran I', 'spatial co-location'],
+    inputs: ['Variable X spatial values', 'Variable Y spatial values', 'Spatial weights matrix W'],
+    example: { a: ['N = 85 spatial regions', 'Variable X: Income', 'Variable Y: Home values'], result: 'Bivariate Spatial Moran’s I_xy = 0.612 (p < .001). Strong positive spatial co-location.' },
+    formula: 'I_{xy} = [ ∑_i ∑_j w_{ij} (x_i - X̄)(y_j - Ȳ) ] / [ s_x s_y ∑_i ∑_j w_{ij} ]',
+    code: {
+      python: `import libpysal, esda\n# Bivariate Moran's I spatial cross-correlation\n# bivar = esda.moran.Moran_BV(x, y, w)`,
+      r: `library(spdep)\n# Compute bivariate spatial cross-correlation`,
+      ts: `import { bivariateSpatialMoran } from '@statlab/core';\nconst res = bivariateSpatialMoran(xVals, yVals, weightsMatrix);`,
+    },
+    useCases: [
+      'Analyzing spatial co-location between environmental exposure levels and regional health outcomes.',
+      'Evaluating geographic clustering correlation between cloud server latency and regional user density.'
+    ],
+    when: 'Use when testing whether variable X in spatial location i correlates with variable Y in neighboring locations j.',
+    cautions: [
+      'Bivariate spatial correlation can be asymmetric (X_i vs Y_j ≠ Y_i vs X_j).',
+      'Requires row-standardized spatial weight matrix.'
+    ],
+    workbenchId: 'spatial_cross_corr',
+  },
+  {
+    slug: 'bivariate-cross-k-function',
+    title: 'Bivariate Cross-K function point pattern calculator',
+    family: 'Spatial statistics & geostatistics',
+    description: 'Calculate Ripley’s Bivariate Cross-K function K_12(r) to detect spatial attraction or repulsion between two distinct point types.',
+    keywords: ['Cross-K function', 'bivariate point pattern', 'spatial attraction repulsion', 'Ripleys Cross K', 'spatial point co-occurrence'],
+    inputs: ['Type 1 point coordinates (X1, Y1)', 'Type 2 point coordinates (X2, Y2)', 'Search radius range r'],
+    example: { a: ['Type 1 points N1 = 140', 'Type 2 points N2 = 210', 'Radius r = 50m'], result: 'K_12(50m) = 8,450 (Expected CSR = 7,854). Statistically significant spatial attraction (co-occurrence) at 50m radius.' },
+    formula: 'K_{12}(r) = (A / (N_1 N_2)) ∑_{i=1}^{N_1} ∑_{j=1}^{N_2} I(d_{ij} ≤ r) / w_{ij}',
+    code: {
+      python: `import pointpats\n# Compute bivariate Cross-K function for two point patterns`,
+      r: `library(spatstat)\nKcross(pattern, i = "type1", j = "type2")`,
+      ts: `import { bivariateCrossK } from '@statlab/core';\nconst res = bivariateCrossK(points1, points2, radiusR);`,
+    },
+    useCases: [
+      'Testing spatial co-clustering between retail store locations and competitor outlets.',
+      'Analyzing spatial interaction between primary cell clusters and micro-vessel point patterns in tissue pathology.'
+    ],
+    when: 'Use to evaluate spatial dependence, attraction, or independence between two distinct types of spatial point events.',
+    cautions: [
+      'Apply edge corrections (Ripley or isotropic) to prevent bias near study boundary limits.',
+      'Values of K_12(r) > π r² indicate attraction; K_12(r) < π r² indicate spatial repulsion.'
+    ],
+    workbenchId: 'spatial_cross_k',
+  },
+
+  // --- CONTINUOUS PROBABILITY DISTRIBUTIONS ---
+  {
+    slug: 'half-normal-distribution-calculator',
+    title: 'Half-Normal distribution calculator',
+    family: 'Continuous probability distributions',
+    description: 'Calculate Half-Normal distribution PDF, CDF, quantiles, and maximum likelihood scale parameter σ based on folded zero-mean normal data.',
+    keywords: ['Half Normal distribution', 'half normal calculator', 'folded normal distribution', 'half normal quantile', 'scale parameter sigma'],
+    inputs: ['Scale parameter σ (or raw absolute values |X|)'],
+    example: { a: ['Scale σ = 2.5', 'X value = 3.2'], result: 'Half-Normal PDF = 0.140, Cumulative CDF = 0.799, Mean = σ√(2/π) = 1.995.' },
+    formula: 'f(x; σ) = (√(2/π) / σ) * exp( -x² / (2σ²) )  for x ≥ 0',
+    code: {
+      python: `from scipy import stats\n# Half-Normal distribution with scale sigma\nscale = 2.5\npdf = stats.halfnorm.pdf(3.2, scale=scale)\ncdf = stats.halfnorm.cdf(3.2, scale=scale)`,
+      r: `library(fBasics)\ndhalfnorm(3.2, scale = 2.5)`,
+      ts: `import { halfNormalDist } from '@statlab/core';\nconst cdf = halfNormalDist.cdf(3.2, 2.5);`,
+    },
+    useCases: [
+      'Modeling absolute measurement errors and directional drift magnitudes in physical sensors.',
+      'Modeling stochastic frontier production function inefficiency terms in econometrics.'
+    ],
+    when: 'Use when modeling non-negative continuous random variables representing the absolute value of a zero-mean normal distribution.',
+    cautions: [
+      'Assumes underlying unfolded distribution is strictly centered at zero mean.',
+      'If underlying normal distribution has non-zero mean μ ≠ 0, use Folded-Normal distribution.'
+    ],
+    workbenchId: 'half_normal_dist',
+  },
+  {
+    slug: 'folded-normal-distribution-calculator',
+    title: 'Folded-Normal distribution calculator',
+    family: 'Continuous probability distributions',
+    description: 'Calculate Folded-Normal distribution PDF, CDF, and moments for absolute values |Y| where Y ~ N(μ, σ²).',
+    keywords: ['Folded Normal distribution', 'folded normal calculator', 'absolute normal mean', 'non zero mean folded normal'],
+    inputs: ['Underlying mean μ', 'Underlying standard deviation σ', 'Evaluation value x ≥ 0'],
+    example: { a: ['Mean μ = 1.5', 'SD σ = 2.0', 'Value x = 3.0'], result: 'Folded-Normal PDF = 0.184, Cumulative CDF = 0.732, Mean E[|Y|] = 2.091.' },
+    formula: 'f(x; μ, σ) = (1/σ) φ((x - μ)/σ) + (1/σ) φ((x + μ)/σ)  for x ≥ 0',
+    code: {
+      python: `from scipy import stats\ndef folded_normal_pdf(x, mu, sigma):\n    return (stats.norm.pdf((x - mu)/sigma) + stats.norm.pdf((x + mu)/sigma)) / sigma`,
+      r: `library(vgam)\ndfoldnorm(3.0, mean = 1.5, sd = 2.0)`,
+      ts: `import { foldedNormalDist } from '@statlab/core';\nconst pdf = foldedNormalDist.pdf(3.0, 1.5, 2.0);`,
+    },
+    useCases: [
+      'Modeling absolute positioning error magnitudes when target calibration has non-zero bias offset.',
+      'Analyzing absolute value financial asset price return deviations.'
+    ],
+    when: 'Use when taking absolute values of normally distributed observations with non-zero mean μ.',
+    cautions: [
+      'As μ/σ becomes large (μ/σ > 3), Folded-Normal distribution converges back to standard shifted Normal N(μ, σ²).',
+      'Requires numerical methods for quantile inversion.'
+    ],
+    workbenchId: 'folded_normal_dist',
+  },
+  {
+    slug: 'frechet-extreme-value-distribution',
+    title: 'Fréchet (Type II Extreme Value) distribution calculator',
+    family: 'Extreme value & heavy-tailed distributions',
+    description: 'Calculate Fréchet distribution (Type II Extreme Value) PDF, CDF, quantiles, and hazard rate for heavy-tailed maximum extremes.',
+    keywords: ['Frechet distribution', 'Type II extreme value', 'Frechet quantile', 'heavy tail max extreme', 'Frechet CDF'],
+    inputs: ['Shape parameter α > 0', 'Scale parameter s > 0', 'Location parameter m', 'Value x > m'],
+    example: { a: ['Shape α = 2.5', 'Scale s = 10.0', 'Location m = 0.0', 'Value x = 15.0'], result: 'Fréchet Cumulative Probability CDF = exp(-(15/10)^(-2.5)) = 0.760, Exceedance = 24.0%.' },
+    formula: 'F(x; α, s, m) = exp( -((x - m)/s)^(-α) )  for x > m',
+    code: {
+      python: `from scipy import stats\n# Fréchet distribution is frechet_r or invweibull in scipy\ncdf = stats.invweibull.cdf(15.0, c=2.5, scale=10.0)`,
+      r: `library(evd)\npfrechet(15.0, shape = 2.5, scale = 10.0)`,
+      ts: `import { frechetDist } from '@statlab/core';\nconst cdf = frechetDist.cdf(15.0, 2.5, 10.0);`,
+    },
+    useCases: [
+      'Modeling maximum extreme events in heavy-tailed phenomena (annual max wind speeds, extreme flood peaks, financial market crashes).',
+      'Calculating extreme quantile return periods for structural engineering loads.'
+    ],
+    when: 'Use for modeling maximum values from heavy-tailed probability distributions with polynomial tail decay.',
+    cautions: [
+      'Moments of order k ≥ α do not exist (infinite variance if α ≤ 2; infinite mean if α ≤ 1).',
+      'Do not confuse Fréchet (Type II max) with Gumbel (Type I max) or Weibull (Type III max).'
+    ],
+    workbenchId: 'frechet_dist',
+  },
+
+  // --- NON-PARAMETRIC EFFECT SIZES ---
+  {
+    slug: 'cliffs-delta-nonparametric-effect',
+    title: 'Cliff’s Delta non-parametric effect size calculator',
+    family: 'Resampling & robust non-parametric estimation',
+    description: 'Calculate Cliff’s Delta (δ) ordinal non-parametric effect size, confidence intervals, and dominance interpretation for Mann-Whitney tests.',
+    keywords: ['Cliffs Delta calculator', 'nonparametric effect size', 'ordinal dominance effect', 'Cliffs delta confidence interval', 'Mann Whitney effect size'],
+    inputs: ['Group A sample data', 'Group B sample data', 'Confidence level (95%)'],
+    example: { a: ['Group A (N=20)', 'Group B (N=20)'], result: 'Cliff’s Delta δ = +0.54 (95% CI: 0.22 - 0.76). Large positive ordinal dominance (Group A values consistently exceed Group B).' },
+    formula: 'δ = [ ∑_{i,j} sign(x_{1i} - x_{2j}) ] / (n_1 * n_2)',
+    code: {
+      python: `import numpy as np\ndef cliffs_delta(x, y):\n    n1, n2 = len(x), len(y)\n    diffs = [1 if i > j else -1 if i < j else 0 for i in x for j in y]\n    return sum(diffs) / (n1 * n2)`,
+      r: `library(effsize)\ncliff.delta(group_a, group_b)`,
+      ts: `import { cliffsDelta } from '@statlab/core';\nconst res = cliffsDelta(groupA, groupB);`,
+    },
+    useCases: [
+      'Reporting non-parametric effect size for ordinal rating scale comparisons (Likert scales, LLM human preference ranks).',
+      'Quantifying robust performance gains in benchmark comparisons with heavy outliers.'
+    ],
+    when: 'Use whenever reporting Mann-Whitney U test results to express non-parametric effect size without assuming normality.',
+    cautions: [
+      'Cliff’s Delta ranges from -1.0 (complete negative dominance) to +1.0 (complete positive dominance).',
+      'Interpretation thresholds: |δ| < 0.147 (negligible), < 0.33 (small), < 0.474 (medium), ≥ 0.474 (large).'
+    ],
+    workbenchId: 'cliffs_delta',
+  },
+  {
+    slug: 'vargha-delaney-a-effect-size',
+    title: 'Vargha and Delaney’s A measure of stochastic superiority calculator',
+    family: 'Resampling & robust non-parametric estimation',
+    description: 'Calculate Vargha and Delaney’s A_12 non-parametric measure of stochastic superiority and probability of dominance.',
+    keywords: ['Vargha Delaney A', 'stochastic superiority', 'A12 effect size', 'probability of dominance', 'nonparametric A measure'],
+    inputs: ['Group 1 sample values', 'Group 2 sample values'],
+    example: { a: ['Group 1 (N=25)', 'Group 2 (N=25)', 'Mann-Whitney U = 460'], result: 'A_12 = 0.736 (95% CI: 0.58 - 0.85). Group 1 has a 73.6% probability of yielding a higher value than Group 2.' },
+    formula: 'A_{12} = (R_1 / n_1 - (n_1 + 1) / 2) / n_2 = (U_1 / (n_1 * n_2))',
+    code: {
+      python: `from scipy import stats\ndef vargha_delaney_a(x, y):\n    u, _ = stats.mannwhitneyu(x, y, alternative='two-sided')\n    return u / (len(x) * len(y))`,
+      r: `library(effsize)\nVD.A(group1, group2)`,
+      ts: `import { varghaDelaneyA } from '@statlab/core';\nconst a12 = varghaDelaneyA(group1, group2);`,
+    },
+    useCases: [
+      'Evaluating software benchmark execution times to express exact probability that Algorithm A runs faster than Algorithm B.',
+      'Reporting user task completion speed advantage in UX A/B testing.'
+    ],
+    when: 'Use to report intuitive probability-based effect size (A_12 = 0.50 means equal chance; A_12 > 0.50 means Group 1 tends to be larger).',
+    cautions: [
+      'Directly related to Cliff’s Delta: A_12 = (δ + 1) / 2.',
+      'Interpretation bounds: A_12 ≈ 0.56 (small), 0.64 (medium), 0.71 (large).'
+    ],
+    workbenchId: 'vargha_delaney_a',
+  },
+
+  // --- PSYCHOMETRICS & IRT ---
+  {
+    slug: 'item-information-function-irt',
+    title: 'IRT Item Information Function (IIF) calculator',
+    family: 'Psychometrics & scale analysis',
+    description: 'Calculate Item Information Function I_i(θ) and Test Information Function TIF across latent trait ability levels (θ) in Item Response Theory.',
+    keywords: ['Item Information Function', 'IIF IRT calculator', 'Test Information Function TIF', 'IRT measurement precision', 'item discrimination information'],
+    inputs: ['Ability level θ (theta)', 'Item discrimination a_i', 'Item difficulty b_i', 'Guessing parameter c_i (optional, default 0 for 2PL)'],
+    example: { a: ['Ability θ = +1.0', 'Discrimination a = 1.5', 'Difficulty b = 0.5', '2PL Model'], result: 'Item Information I(θ=1.0) = 0.485, Item Probability P(θ) = 0.680, Standard Error SE(θ) = 1.436.' },
+    formula: 'I_i(θ) = a_i² * [ (1 - P_i(θ)) / P_i(θ) ] * [ (P_i(θ) - c_i) / (1 - c_i) ]²',
+    code: {
+      python: `import numpy as np\ndef irt_iif_2pl(theta, a, b):\n    p = 1 / (1 + np.exp(-a * (theta - b)))\n    return (a**2) * p * (1 - p)`,
+      r: `library(mirt)\niteminfo(extract.item(mod, 1), Theta = seq(-3, 3, 0.1))`,
+      ts: `import { irtItemInformation } from '@statlab/core';\nconst info = irtItemInformation(1.0, { a: 1.5, b: 0.5 });`,
+    },
+    useCases: [
+      'Selecting optimal questions for Computerized Adaptive Testing (CAT) to maximize measurement precision at specific candidate ability levels.',
+      'Evaluating LLM benchmark question discrimination power across difficulty spectrums.'
+    ],
+    when: 'Use in psychometric test assembly to quantify where along the latent trait scale θ an item provides peak measurement information.',
+    cautions: [
+      'Maximum information for a 2PL item occurs exactly at θ = b_i, with peak value I_{max} = a_i² / 4.',
+      'Standard error of estimation SE(θ) is inversely proportional to square root of Test Information: SE(θ) = 1 / √TIF(θ).'
+    ],
+    workbenchId: 'irt_iif_info',
+  },
 ];
 
 export const CATEGORIES = [
@@ -9609,7 +10227,7 @@ export function getCalculatorCategory(p) {
   }
 
   // 3. SPC & Quality Control
-  if (f.includes('process control') || f.includes('spc') || s.includes('cpk') || s.includes('xbar') || s.includes('dpmo') || s.includes('gage-rr') || s.includes('p-chart') || s.includes('c-chart') || s.includes('cusum') || s.includes('ewma-control') || s.includes('tolerance-interval') || s.includes('mts') || s.includes('taguchi') || s.includes('plackett')) {
+  if (f.includes('process control') || f.includes('spc') || s.includes('cpk') || s.includes('ppk') || s.includes('xbar') || s.includes('dpmo') || s.includes('gage-rr') || s.includes('p-chart') || s.includes('np-chart') || s.includes('u-chart') || s.includes('c-chart') || s.includes('cusum') || s.includes('ewma-control') || s.includes('tolerance-interval') || s.includes('mts') || s.includes('taguchi') || s.includes('plackett')) {
     return CATEGORIES.find((c) => c.slug === 'quality-control-spc');
   }
 
@@ -9619,32 +10237,32 @@ export function getCalculatorCategory(p) {
   }
 
   // 5. Psychometrics & Scale Analysis & Correlation
-  if (f.includes('psychometrics') || f.includes('irt') || f.includes('correlation') || s.includes('cronbach') || s.includes('rasch') || s.includes('omega') || s.includes('irt') || s.includes('dif') || s.includes('cfa') || s.includes('bifactor') || s.includes('latent-growth') || s.includes('guttman') || s.includes('conjoint') || s.includes('samejima') || s.includes('correlation') || s.includes('sem-path') || s.includes('canonical-variate')) {
+  if ((f.includes('psychometrics') || f.includes('irt') || f.includes('correlation') || s.includes('cronbach') || s.includes('rasch') || (s.includes('omega') && !s.includes('omega-ratio')) || s.includes('irt') || s.includes('dif') || s.includes('cfa') || s.includes('bifactor') || s.includes('latent-growth') || s.includes('guttman') || s.includes('conjoint') || s.includes('samejima') || s.includes('correlation') || s.includes('sem-path') || s.includes('canonical-variate') || s.includes('item-information'))) {
     return CATEGORIES.find((c) => c.slug === 'psychometrics-scale-analysis');
   }
 
   // 6. Causal Inference, Biostatistics & Kinetic Models
-  if (f.includes('causal') || f.includes('biostatistics') || f.includes('meta-analysis') || f.includes('growth, decay') || s.includes('synthetic-control') || s.includes('did') || s.includes('rdd') || s.includes('psm') || s.includes('ipw') || s.includes('causal-forest') || s.includes('odds-ratio') || s.includes('relative-risk') || s.includes('mantel-haenszel') || s.includes('number-needed') || s.includes('diagnostic-likelihood') || s.includes('bland-altman') || s.includes('augsynth') || s.includes('gsc') || s.includes('meta-analysis') || s.includes('half-life') || s.includes('arrhenius') || s.includes('growth') || s.includes('hill-equation') || s.includes('michaelis') || s.includes('funnel-plot')) {
+  if (f.includes('causal') || f.includes('biostatistics') || f.includes('meta-analysis') || f.includes('growth, decay') || s.includes('synthetic-control') || s.includes('did') || s.includes('rdd') || s.includes('psm') || s.includes('ipw') || s.includes('causal-forest') || s.includes('odds-ratio') || s.includes('relative-risk') || s.includes('mantel-haenszel') || s.includes('number-needed') || s.includes('diagnostic-likelihood') || s.includes('bland-altman') || s.includes('augsynth') || s.includes('gsc') || s.includes('meta-analysis') || s.includes('half-life') || s.includes('arrhenius') || s.includes('growth') || s.includes('hill-equation') || s.includes('michaelis') || s.includes('funnel-plot') || s.includes('win-ratio') || s.includes('decision-curve') || (s.includes('e-value') && !s.includes('extreme-value'))) {
     return CATEGORIES.find((c) => c.slug === 'causal-inference-biostatistics');
   }
 
   // 7. Time Series, Econometrics & Volatility
-  if (f.includes('time series') || f.includes('volatility') || f.includes('econometrics') || s.includes('garch') || s.includes('arch') || s.includes('arima') || s.includes('var-vector') || s.includes('vecm') || s.includes('dickey-fuller') || s.includes('kpss') || s.includes('ljung-box') || s.includes('autocorrelation') || s.includes('granger') || s.includes('sharpe') || s.includes('heteroscedasticity') || s.includes('breusch') || s.includes('goldfeld') || s.includes('hausman') || s.includes('pesaran') || s.includes('zivot') || s.includes('chow-test') || s.includes('bds-test') || s.includes('diebold') || s.includes('kalman') || s.includes('filter') || s.includes('black-scholes') || s.includes('heston') || s.includes('merton') || s.includes('vasicek') || s.includes('cir') || s.includes('hull-white') || s.includes('binomial-tree') || s.includes('option') || s.includes('parkinson') || s.includes('garman') || s.includes('yang-zhang') || s.includes('rogers-satchell') || s.includes('ardl') || s.includes('toda-yamamoto') || s.includes('durbin-watson')) {
+  if (f.includes('time series') || f.includes('volatility') || f.includes('econometrics') || s.includes('garch') || s.includes('arch') || s.includes('arima') || s.includes('var-vector') || s.includes('vecm') || s.includes('dickey-fuller') || s.includes('kpss') || s.includes('ljung-box') || s.includes('autocorrelation') || s.includes('granger') || s.includes('sharpe') || s.includes('sortino') || s.includes('calmar') || s.includes('omega-ratio') || s.includes('drawdown') || s.includes('heteroscedasticity') || s.includes('breusch') || s.includes('goldfeld') || s.includes('hausman') || s.includes('pesaran') || s.includes('zivot') || s.includes('chow-test') || s.includes('bds-test') || s.includes('diebold') || s.includes('kalman') || s.includes('filter') || s.includes('black-scholes') || s.includes('heston') || s.includes('merton') || s.includes('vasicek') || s.includes('cir') || s.includes('hull-white') || s.includes('binomial-tree') || s.includes('option') || s.includes('parkinson') || s.includes('garman') || s.includes('yang-zhang') || s.includes('rogers-satchell') || s.includes('ardl') || s.includes('toda-yamamoto') || s.includes('durbin-watson')) {
     return CATEGORIES.find((c) => c.slug === 'time-series-econometrics');
   }
 
   // 8. AI/ML Evaluation & Decisioning
-  if (f.includes('ai') || f.includes('ml') || f.includes('evaluation') || f.includes('information theory') || s.includes('confusion-matrix') || s.includes('roc-auc') || s.includes('kappa') || s.includes('brier') || s.includes('ndcg') || s.includes('mape') || s.includes('matthews') || s.includes('huber-loss') || s.includes('silhouette') || s.includes('davies-bouldin') || s.includes('calinski') || s.includes('shap') || s.includes('integrated-gradients') || s.includes('bandit') || s.includes('thompson') || s.includes('ucb1') || s.includes('conformal') || s.includes('venn-abers') || s.includes('kl-divergence') || s.includes('shannon-entropy') || s.includes('cross-entropy') || s.includes('mutual-information') || s.includes('transfer-entropy') || s.includes('conditional-mutual') || s.includes('dbscan') || s.includes('optics') || s.includes('lof') || s.includes('isolation-forest') || s.includes('one-class-svm') || s.includes('lasso') || s.includes('ridge') || s.includes('scad') || s.includes('mcp-minimax') || s.includes('group-lasso') || s.includes('qrf') || s.includes('gmm') || s.includes('icc-intraclass') || s.includes('pls') || s.includes('pcr')) {
+  if (/\bai\b/i.test(f) || f.includes('ml') || f.includes('evaluation') || f.includes('information theory') || s.includes('confusion-matrix') || s.includes('roc-auc') || s.includes('kappa') || s.includes('brier') || s.includes('ndcg') || s.includes('mape') || s.includes('matthews') || s.includes('mrr') || s.includes('precision-map') || s.includes('ece') || s.includes('perplexity') || s.includes('huber-loss') || s.includes('silhouette') || s.includes('davies-bouldin') || s.includes('calinski') || s.includes('shap') || s.includes('integrated-gradients') || s.includes('bandit') || s.includes('thompson') || s.includes('ucb1') || s.includes('conformal') || s.includes('venn-abers') || s.includes('kl-divergence') || s.includes('shannon-entropy') || s.includes('cross-entropy') || s.includes('mutual-information') || s.includes('transfer-entropy') || s.includes('conditional-mutual') || s.includes('dbscan') || s.includes('optics') || s.includes('lof') || s.includes('isolation-forest') || s.includes('one-class-svm') || s.includes('lasso') || s.includes('ridge') || s.includes('scad') || s.includes('mcp-minimax') || s.includes('group-lasso') || s.includes('qrf') || s.includes('gmm') || s.includes('icc-intraclass') || s.includes('pls') || s.includes('pcr')) {
     return CATEGORIES.find((c) => c.slug === 'machine-learning-ai-evaluation');
   }
 
   // 9. Resampling & Non-parametric
-  if (f.includes('nonparametric') || f.includes('non-parametric') || f.includes('resampling') || f.includes('ordinal') || f.includes('equivalence') || f.includes('categorical') || s.includes('bootstrap') || s.includes('permutation') || s.includes('mann-whitney') || s.includes('wilcoxon') || s.includes('kruskal') || s.includes('friedman') || s.includes('dunn-test') || s.includes('kolmogorov') || s.includes('rank-biserial') || s.includes('median-absolute-deviation') || s.includes('winsorized') || s.includes('theil-sen') || s.includes('siegel') || s.includes('hodges-lehmann') || s.includes('cochran') || s.includes('jonckheere') || s.includes('kendall-w') || s.includes('goodman-kruskal') || s.includes('somers') || s.includes('hoeffding') || s.includes('tost') || s.includes('rayleigh-test') || s.includes('watson-williams') || s.includes('kuiper') || s.includes('mood') || s.includes('fligner') || s.includes('ansari') || s.includes('biserial') || s.includes('tetrachoric') || s.includes('polychoric') || s.includes('chi-square-test') || s.includes('cramers-v') || s.includes('mcnemar') || s.includes('stuart-maxwell') || s.includes('cohen-w')) {
+  if (f.includes('nonparametric') || f.includes('non-parametric') || f.includes('resampling') || f.includes('ordinal') || f.includes('equivalence') || f.includes('categorical') || s.includes('bootstrap') || s.includes('permutation') || s.includes('mann-whitney') || s.includes('wilcoxon') || s.includes('kruskal') || s.includes('friedman') || s.includes('dunn-test') || s.includes('kolmogorov') || s.includes('rank-biserial') || s.includes('cliffs-delta') || s.includes('vargha-delaney') || s.includes('median-absolute-deviation') || s.includes('winsorized') || s.includes('theil-sen') || s.includes('siegel') || s.includes('hodges-lehmann') || s.includes('cochran') || s.includes('jonckheere') || s.includes('kendall-w') || s.includes('goodman-kruskal') || s.includes('somers') || s.includes('hoeffding') || s.includes('tost') || s.includes('rayleigh-test') || s.includes('watson-williams') || s.includes('kuiper') || s.includes('mood') || s.includes('fligner') || s.includes('ansari') || s.includes('biserial') || s.includes('tetrachoric') || s.includes('polychoric') || s.includes('chi-square-test') || s.includes('cramers-v') || s.includes('mcnemar') || s.includes('stuart-maxwell') || s.includes('cohen-w')) {
     return CATEGORIES.find((c) => c.slug === 'resampling-nonparametric');
   }
 
   // 10. Probability & Multivariate Distributions
-  if (f.includes('probability') || f.includes('distribution') || f.includes('extreme value') || f.includes('transformations') || s.includes('z-score') || s.includes('t-score') || s.includes('f-distribution') || s.includes('chi-square-distribution') || s.includes('pca') || s.includes('manova') || s.includes('gev') || s.includes('pareto') || s.includes('pot-peaks') || s.includes('return-period') || s.includes('gumbel') || s.includes('weibull-two') || s.includes('log-normal') || s.includes('gamma-distribution') || s.includes('cauchy') || s.includes('beta-distribution') || s.includes('dirichlet') || s.includes('hypergeometric') || s.includes('negative-binomial') || s.includes('multinomial') || s.includes('exponential-distribution') || s.includes('poisson-distribution') || s.includes('log-logistic') || s.includes('rayleigh-distribution') || s.includes('skew-normal') || s.includes('lambda-distribution') || s.includes('inverse-gaussian') || s.includes('hyperbolic') || s.includes('normal-inverse') || s.includes('johnson-su') || s.includes('maxwell-boltzmann') || s.includes('zero-inflated-poisson') || s.includes('log-gamma') || s.includes('studentized-range') || s.includes('multivariate-t') || s.includes('matrix-variate') || s.includes('skew-t') || s.includes('mds') || s.includes('cva') || s.includes('bivariate-normal') || s.includes('truncated-normal') || s.includes('fastica') || s.includes('t-sne') || s.includes('umap') || s.includes('box-cox') || s.includes('yeo-johnson')) {
+  if (f.includes('probability') || f.includes('distribution') || f.includes('extreme value') || f.includes('transformations') || s.includes('z-score') || s.includes('t-score') || s.includes('f-distribution') || s.includes('chi-square-distribution') || s.includes('pca') || s.includes('manova') || s.includes('gev') || s.includes('frechet') || s.includes('hill-estimator') || s.includes('half-normal') || s.includes('folded-normal') || s.includes('pareto') || s.includes('pot-peaks') || s.includes('return-period') || s.includes('gumbel') || s.includes('weibull-two') || s.includes('log-normal') || s.includes('gamma-distribution') || s.includes('cauchy') || s.includes('beta-distribution') || s.includes('dirichlet') || s.includes('hypergeometric') || s.includes('negative-binomial') || s.includes('multinomial') || s.includes('exponential-distribution') || s.includes('poisson-distribution') || s.includes('log-logistic') || s.includes('rayleigh-distribution') || s.includes('skew-normal') || s.includes('lambda-distribution') || s.includes('inverse-gaussian') || s.includes('hyperbolic') || s.includes('normal-inverse') || s.includes('johnson-su') || s.includes('maxwell-boltzmann') || s.includes('zero-inflated-poisson') || s.includes('log-gamma') || s.includes('studentized-range') || s.includes('multivariate-t') || s.includes('matrix-variate') || s.includes('skew-t') || s.includes('mds') || s.includes('cva') || s.includes('bivariate-normal') || s.includes('truncated-normal') || s.includes('fastica') || s.includes('t-sne') || s.includes('umap') || s.includes('box-cox') || s.includes('yeo-johnson')) {
     return CATEGORIES.find((c) => c.slug === 'probability-distributions');
   }
 
